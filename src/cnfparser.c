@@ -66,10 +66,11 @@ void nextChar(ParserState* s){
 
 
 void nextSpace(ParserState* s){
+  nextChar(s);
   for (int i = s->index; i < s->end; i++){
-    nextChar(s);
     if ((*s->position == ' ') || (*s->position == '\n'))
       return;
+    nextChar(s);
   }
 }
 
@@ -84,10 +85,11 @@ void nextSpace(ParserState* s){
 
 
 void nextSymb(ParserState* s){
+  nextChar(s);
   for (int i = s->index; i < s->end; i++){
-    nextChar(s);
     if ((*s->position != ' ') && (*s->position != '\n'))
       return;
+    nextChar(s);
   }
 }
 
@@ -172,7 +174,7 @@ CNF parseCNF(char* input, int filesize){
         nextSpace(&s);
         nextSymb(&s);
         cnfState.varnum    = parseNum(&s);
-        //nextSymb(&s);
+        nextSymb(&s);
         cnfState.clausenum = parseNum(&s);
       }
     }else{
