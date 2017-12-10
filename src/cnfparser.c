@@ -1,6 +1,7 @@
 #include "cnfparser.h"
 #include "stdio.h"
 #include "string.h"
+#include "stdlib.h"
 
 
 
@@ -161,6 +162,43 @@ int parseNum(ParserState* s){
 
 
 
+
+Clause* parseClause(ParserState* s){
+  int vals[512];
+  int n;
+  for(int i = 0; i < 512; i++){
+    nextSymb(s);
+    vals[i] = parseNum(s);
+    if(vals[i] == 0){
+      n = i;
+      break;
+    }
+  }
+  if(vals[n] != 0){
+    printf("Exceeded maximum number of parameters per clause! Line:%i\n", s->line);
+    exit(5);
+  }
+
+  //Everything went fine.
+
+  //Temporary mallocs. Use faster allocator later.
+  Clause* clause = malloc(sizeof(Clause));
+  clause->vars = malloc(4 * n);
+  clause->numvars = n;
+  for(int i = 0; i < n; i++)
+    clause->vars[i] = vals[i];
+
+  return clause;
+}
+
+
+
+
+
+
+
+
+
 CNF parseCNF(char* input, int filesize){
   ParserState s = {0, 0, 0, filesize, input, input};
   CNF cnfState  = {0, 0, NULL};
@@ -174,14 +212,12 @@ CNF parseCNF(char* input, int filesize){
         nextSpace(&s);
         nextSymb(&s);
         cnfState.varnum    = parseNum(&s);
+        //nextSpace(&s);
         nextSymb(&s);
         cnfState.clausenum = parseNum(&s);
       }
     }else{
-
-      s.index++;
-      s.column++;
-      s.position++;
+      Clause* c = parseClause(&s);
     }
   }
   return cnfState;
