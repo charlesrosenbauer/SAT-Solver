@@ -26,16 +26,14 @@ typedef struct{
 
 
 
-void nextLine(ParserState* s){
-  for (int i = s->index; i < s->end; i++){
-    if (*s->position == '\n'){
-      s->line++;
-      s->column = 0;
-      return;
-    }
-    s->position++;
+void nextChar(ParserState* s){
+  if (*s->position == '\n'){
+    s->line++;
+    s->column = 0;
+  }else{
     s->column++;
   }
+  s->position++;
 }
 
 
@@ -47,14 +45,19 @@ void nextLine(ParserState* s){
 
 
 
-void nextChar(ParserState* s){
-  if (*s->position == '\n'){
-    s->line++;
-    s->column = 0;
-  }else{
-    s->column++;
+void nextLine(ParserState* s){
+  for (int i = s->index; i < s->end; i++){
+/*
+    if (*s->position == '\n'){
+      s->line++;
+      s->column = 0;
+      return;
+    }
+    s->position++;
+    s->column++;*/
+    nextChar(s);
+    if(s->column == 0) return;
   }
-  s->position++;
 }
 
 
@@ -148,7 +151,7 @@ int parseNum(ParserState* s){
       default: cond = 0;
     }
 
-    nextChar(s);
+    if(cond) nextChar(s);
   }
 
   return number * sign;
@@ -159,31 +162,40 @@ int parseNum(ParserState* s){
 
 
 
-
+int ct = 0;
 
 
 
 Clause* parseClause(ParserState* s){
+  ct++;
   int vals[512];
-  int n;
+  int n = 511;
   for(int i = 0; i < 512; i++){
     nextSymb(s);
     vals[i] = parseNum(s);
     if(vals[i] == 0){
       n = i;
-      break;
+      goto next;
     }
   }
+
+  next:
   if(vals[n] != 0){
-    printf("Exceeded maximum number of parameters per clause! Line:%i\n", s->line);
+    printf("Exceeded maximum number of parameters per clause! Line:%i.\n", s->line);
     exit(5);
   }
 
+  if(n == 0) return NULL;
+
   //Everything went fine.
+  printf("L: %i :: ", s->line);
+  for(int i = 0; i < n; i++)
+    printf("%i ", vals[i]);
+  printf("\n");
 
   //Temporary mallocs. Use faster allocator later.
   Clause* clause = malloc(sizeof(Clause));
-  clause->vars = malloc(4 * n);
+  clause->vars = malloc(sizeof(int) * n);
   clause->numvars = n;
   for(int i = 0; i < n; i++)
     clause->vars[i] = vals[i];
@@ -200,24 +212,45 @@ Clause* parseClause(ParserState* s){
 
 
 CNF parseCNF(char* input, int filesize){
-  ParserState s = {0, 0, 0, filesize, input, input};
+  ParserState s = {1, 1, 0, filesize, input, input};
   CNF cnfState  = {0, 0, NULL};
+
+  int hasFoundParameters = 0;
+  int clausesFound = 0;
 
   while(s.index < s.end){
     if(*s.position == 'c'){
       nextLine(&s);
     }else if (*s.position == 'p'){
+      if(hasFoundParameters == 1){
+        printf("Repeated parameter line at %i.\n", s.line);
+        exit(6);
+      }
       nextSymb(&s);
       if(strncmp(s.position, "cmp", 3)){
         nextSpace(&s);
         nextSymb(&s);
         cnfState.varnum    = parseNum(&s);
-        //nextSpace(&s);
-        nextSymb(&s);
+        nextChar(&s);
         cnfState.clausenum = parseNum(&s);
+        nextChar(&s);
+        cnfState.clauses   = malloc(sizeof(Clause) * cnfState.clausenum);
+        hasFoundParameters = 1;
+        printf("p cnf %i %i\n", cnfState.varnum, cnfState.clausenum);
+      }else{
+        printf("Invalid syntax at line %i", s.line);
+        exit(7);
       }
     }else{
+      if((clausesFound >= cnfState.clausenum) && (cnfState.clausenum != 0)) return cnfState;
       Clause* c = parseClause(&s);
+      if(c == NULL){
+        nextChar(&s);
+      }else{
+        cnfState.clauses[clausesFound] = *c;
+        free(c);    // Replace with more efficient free later
+        clausesFound++;
+      }
     }
   }
   return cnfState;
