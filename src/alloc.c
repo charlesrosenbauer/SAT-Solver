@@ -60,8 +60,9 @@ void* blockAlloc(AllocBlock* block, int size, int align){
 
   long newloc = loc + size;
   if((newloc - (long)block->basePtr) >= size){
-    //Overflow! Do something later!
-
+    //Overflow! Go to next block!
+    block->nextBlock = mkAllocBlock(malloc(block->size), block->size, block);
+    return blockAlloc(block->nextBlock, size, align);
   }else{
     block->allcPtr = (void*)newloc;
     return (void*)loc;
