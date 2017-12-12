@@ -51,7 +51,20 @@ Allocator* mkAllocator(int size){
 
 
 
-/*
-void* blockAlloc(AllocBlock* block, int size, int align){
 
-}*/
+// Assumes align is an exponent of 2
+void* blockAlloc(AllocBlock* block, int size, int align){
+  long loc = (long)block->allcPtr;
+  if (loc & (align - 1))
+    loc = (loc + align) & (~(align - 1));
+
+  long newloc = loc + size;
+  if((newloc - (long)block->basePtr) >= size){
+    //Overflow! Do something later!
+
+  }else{
+    block->allcPtr = (void*)newloc;
+    return (void*)loc;
+  }
+  return NULL;
+}
