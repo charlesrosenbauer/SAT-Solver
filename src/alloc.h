@@ -48,6 +48,7 @@ typedef struct {
 Allocator*  mkAllocator(int);
 void  rmAllocator(Allocator*);
 void* alloc      (Allocator*, int);
+void* allocAlign (Allocator*, int, int);
 void* frameAlloc (Allocator*, int);
 void  popAlloc   (Allocator*);
 
