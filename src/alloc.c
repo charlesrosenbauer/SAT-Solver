@@ -20,7 +20,7 @@ AllocBlock* mkAllocBlock(void* ptr, int size, AllocBlock* last){
   ret->basePtr   = ret->allcPtr;
   ret->top       = size - sizeof(AllocBlock);
   ret->size      = size - sizeof(AllocBlock);
-  ret->lastTop   = 0;
+  ret->lastFrame = NULL;
 
   return ret;
 }
@@ -69,7 +69,6 @@ void* blockAlloc(AllocBlock* block, int size, int align, void** top){
     block->allcPtr = (void*)newloc;
     return (void*)loc;
   }
-  return NULL;
 }
 
 
@@ -96,4 +95,61 @@ void* alloc(Allocator* a, int size){
 
 void* allocAlign(Allocator* a, int size, int align){
   return blockAlloc(a->lastBlock, size, align, &a->lastBlock);
+}
+
+
+
+
+
+
+
+
+
+
+
+void pushFrame(Allocator* a){
+  void** frameHeader = (void**)allocAlign(a, sizeof(void*), 2);
+  long frameHeaderBits = (long)frameHeader;
+  AllocBlock* lastBlockRef = (AllocBlock*)a->lastBlock;
+  long basePtrBits = (long)lastBlockRef->basePtr;
+
+  if((frameHeaderBits ^ basePtrBits) < 4){  // Check if all but the last two bits match
+    //Allocated on new block. Make minor changes.
+    lastBlockRef->lastFrame = (void*)frameHeader;
+    *frameHeader = NULL;  // NULL indicates that the frame pointer is in the previous block.
+  }else{
+    *frameHeader = lastBlockRef->lastFrame;
+    lastBlockRef->lastFrame = frameHeader;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+void popFrame(Allocator* a){
+  AllocBlock* lastBlockRef = (AllocBlock*)a->lastBlock;
+  void** frameHeader = (void**)lastBlockRef->lastFrame;
+
+  if(*frameHeader == NULL){
+    // Remove top block, rewind
+    AllocBlock* top = a->lastBlock;
+    a->lastBlock = top->prevBlock;
+    if(a->initBlock != a->lastBlock){
+      free(top);
+      return popFrame(a);
+    }else{
+      // Cannot rewind further, just reset first block
+      mkAllocBlock(a->initBlock, a->blockSize, NULL);
+      return;
+    }
+  }else{
+    lastBlockRef = (AllocBlock*)a->lastBlock;
+    lastBlockRef->allcPtr = frameHeader;
+  }
 }

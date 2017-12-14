@@ -16,9 +16,9 @@ typedef struct {
 
   void* allcPtr;
   void* basePtr;
+  void* lastFrame;
   int top;
   int size;
-  int lastTop;
 }AllocBlock;
 
 
@@ -49,8 +49,8 @@ Allocator*  mkAllocator(int);
 void  rmAllocator(Allocator*);
 void* alloc      (Allocator*, int);
 void* allocAlign (Allocator*, int, int);
-void* frameAlloc (Allocator*, int);
-void  popAlloc   (Allocator*);
+void  pushFrame  (Allocator*);
+void  popFrame   (Allocator*);
 
 
 
