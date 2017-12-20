@@ -38,7 +38,7 @@ typedef struct{
 
 
 
-int* countMentions(CNF*);
+int* sortByMentions(CNF*);
 
 
 
