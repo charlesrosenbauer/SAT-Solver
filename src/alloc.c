@@ -62,6 +62,7 @@ void* blockAlloc(AllocBlock* block, int size, int align, void** top){
   long newloc = loc + size;
   if((newloc - (long)block->basePtr) >= block->size){
     //Overflow! Go to next block!
+    printf("Alloc\n");
     block->nextBlock = mkAllocBlock(malloc(block->size), block->size, block);
     *top = block->nextBlock;
     return blockAlloc(block->nextBlock, size, align, top);
@@ -113,11 +114,13 @@ void pushFrame(Allocator* a){
   AllocBlock* lastBlockRef = (AllocBlock*)a->lastBlock;
   long basePtrBits = (long)lastBlockRef->basePtr;
 
-  if((frameHeaderBits ^ basePtrBits) < 4){  // Check if all but the last two bits match
+  if((frameHeaderBits - basePtrBits) < 4){  // Check if near the bottom
     //Allocated on new block. Make minor changes.
+    printf("Pushblock\n");
     lastBlockRef->lastFrame = (void*)frameHeader;
     *frameHeader = NULL;  // NULL indicates that the frame pointer is in the previous block.
   }else{
+    printf("Pushhere\n");
     *frameHeader = lastBlockRef->lastFrame;
     lastBlockRef->lastFrame = frameHeader;
   }
@@ -136,19 +139,23 @@ void popFrame(Allocator* a){
   AllocBlock* lastBlockRef = (AllocBlock*)a->lastBlock;
   void** frameHeader = (void**)lastBlockRef->lastFrame;
 
-  if(*frameHeader == NULL){
+  if(*frameHeader == NULL){   // Dereferencing a NULL pointer
     // Remove top block, rewind
     AllocBlock* top = a->lastBlock;
     a->lastBlock = top->prevBlock;
-    if(a->initBlock != a->lastBlock){
+    if(a->lastBlock != NULL){
+      printf("Popback\n");
       free(top);
       return popFrame(a);
     }else{
       // Cannot rewind further, just reset first block
+      printf("Poppound\n");
       mkAllocBlock(a->initBlock, a->blockSize, NULL);
+      a->lastBlock = a->initBlock;
       return;
     }
   }else{
+    printf("Popnormal\n");
     lastBlockRef = (AllocBlock*)a->lastBlock;
     lastBlockRef->allcPtr = frameHeader;
   }

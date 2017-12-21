@@ -1,6 +1,7 @@
 #include "alloc.h"
 #include "solver.h"
 #include "stdlib.h"
+#include "stdio.h"
 
 
 
@@ -20,9 +21,10 @@ int* countMentions(CNF* cnf){
   for(int i = 0; i < cnf->clausenum; i++){
     Clause c = cnf->clauses[i];
 
-    for(int j = 0; j < c.numvars; j++)
-      mentions[c.vars[j]]++;
-
+    for(int j = 0; j < c.numvars; j++){
+      int index = (c.vars[j] < 0)? -c.vars[j] : c.vars[j];
+      mentions[index-1]++;
+    }
   }
 
   return mentions;
@@ -35,11 +37,6 @@ int* countMentions(CNF* cnf){
 
 
 
-
-
-typedef struct{
-  int val, x;
-}IntPair;
 
 
 void quicksort(IntPair* arr, int lo, int hi){
@@ -80,7 +77,7 @@ void quicksort(IntPair* arr, int lo, int hi){
 
 
 
-int* sortByMentions(CNF* cnf){
+IntPair* sortByMentions(CNF* cnf){
 
   int mentionsize = cnf->varnum;
   int* mentions   = countMentions(cnf);
@@ -94,9 +91,9 @@ int* sortByMentions(CNF* cnf){
 
   quicksort(pairs, 0, mentionsize-1);
 
-  for(int i = 0; i < mentionsize; i++)
-    mentions[i] = pairs[i].val;
+  //for(int i = 0; i < mentionsize; i++)
+  //  mentions[i] = pairs[i].val;
 
-  free(pairs);
-  return mentions;
+  free(mentions);
+  return pairs;
 }

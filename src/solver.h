@@ -38,7 +38,20 @@ typedef struct{
 
 
 
-int* sortByMentions(CNF*);
+typedef struct{
+  int val, x;
+}IntPair;
+
+
+
+
+
+
+
+
+
+
+IntPair* sortByMentions(CNF*);
 
 
 
