@@ -1,6 +1,7 @@
 #include "alloc.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include "stdint.h"
 
 
 
@@ -109,20 +110,16 @@ void* allocAlign(Allocator* a, int size, int align){
 
 
 void pushFrame(Allocator* a){
-  void** frameHeader = (void**)allocAlign(a, sizeof(void*), 2);
-  long frameHeaderBits = (long)frameHeader;
-  AllocBlock* lastBlockRef = (AllocBlock*)a->lastBlock;
-  long basePtrBits = (long)lastBlockRef->basePtr;
-
-  if((frameHeaderBits - basePtrBits) < 4){  // Check if near the bottom
-    //Allocated on new block. Make minor changes.
-    printf("Pushblock\n");
-    lastBlockRef->lastFrame = (void*)frameHeader;
-    *frameHeader = NULL;  // NULL indicates that the frame pointer is in the previous block.
+  AllocBlock* lastBlock = (AllocBlock*)a->lastBlock;
+  if(lastBlock->allcPtr - (lastBlock->basePtr + lastBlock->size) < sizeof(void*)){
+    //No room in the current frame!
+    lastBlock->nextBlock = mkAllocBlock(malloc(lastBlock->size), lastBlock->size, lastBlock);
+    a->lastBlock = lastBlock->nextBlock;
+    AllocBlock* nextBlock = lastBlock->nextBlock;
+    nextBlock->lastFrame = (void*)-1;
   }else{
-    printf("Pushhere\n");
-    *frameHeader = lastBlockRef->lastFrame;
-    lastBlockRef->lastFrame = frameHeader;
+    void** framePtr = (void**)alloc(a, sizeof(void*));
+    *framePtr = lastBlock->lastFrame;
   }
 }
 
@@ -136,27 +133,29 @@ void pushFrame(Allocator* a){
 
 
 void popFrame(Allocator* a){
-  AllocBlock* lastBlockRef = (AllocBlock*)a->lastBlock;
-  void** frameHeader = (void**)lastBlockRef->lastFrame;
-
-  if(*frameHeader == NULL){   // Dereferencing a NULL pointer
-    // Remove top block, rewind
-    AllocBlock* top = a->lastBlock;
-    a->lastBlock = top->prevBlock;
-    if(a->lastBlock != NULL){
-      printf("Popback\n");
-      free(top);
-      return popFrame(a);
+  AllocBlock* lastBlock = (AllocBlock*)a->lastBlock;
+  void* lastFrame  = lastBlock->lastFrame;
+  int64_t frameInt = (int64_t)lastFrame;
+  if(lastFrame == NULL){
+    // Last frame is at the beginning of the frame
+    lastBlock->allcPtr = lastBlock->basePtr;
+  }else if(frameInt < 0){
+    // Last frame is in previous block
+    if(lastBlock == a->initBlock){
+      //No previous block
+      lastBlock->allcPtr = lastBlock->basePtr;
     }else{
-      // Cannot rewind further, just reset first block
-      printf("Poppound\n");
-      mkAllocBlock(a->initBlock, a->blockSize, NULL);
-      a->lastBlock = a->initBlock;
-      return;
+      AllocBlock* last = (AllocBlock*)a->lastBlock;
+      a->lastBlock = last->prevBlock;
+      AllocBlock* newLastBlock = (AllocBlock*)a->lastBlock;
+      newLastBlock->nextBlock = NULL;
+      free(last);
+      popFrame(a);
     }
   }else{
-    printf("Popnormal\n");
-    lastBlockRef = (AllocBlock*)a->lastBlock;
-    lastBlockRef->allcPtr = frameHeader;
+    // Last frame is in current block
+    void** prevFrame = (void**)lastFrame;
+    lastBlock->lastFrame = *prevFrame;
+    lastBlock->allcPtr   =  lastFrame;
   }
 }
