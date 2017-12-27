@@ -159,3 +159,23 @@ void popFrame(Allocator* a){
     lastBlock->allcPtr   =  lastFrame;
   }
 }
+
+
+
+
+
+
+
+
+
+
+void rmAllocator(Allocator* a){
+
+  AllocBlock* current = (AllocBlock*)a->initBlock;
+  do{
+    AllocBlock* next  = (AllocBlock*)current->nextBlock;
+    free(current);
+    current =   next;
+  }while(current != NULL);
+  free(a);
+}
