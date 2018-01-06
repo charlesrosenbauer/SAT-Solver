@@ -47,28 +47,28 @@ int main(int argc, char** argv){
 
 
   CNF cnf = parseCNF(buffer, lSize);
-  printf("%i %i %p\n", cnf.varnum, cnf.clausenum, cnf.clauses);
+  printf("%i %i %p\n\n", cnf.varnum, cnf.clausenum, cnf.clauses);
+
+  IntPair* mentions = sortByMentions(&cnf);
+
+  PersistentByteArray* arr = createByteArray(cnf.varnum);
 
   /*
+  // I'll worry about the allocator later
   Allocator* allocator = mkAllocator(16384);
-  for(int i = 0; i < 1024; i++){
+  pushFrame(allocator);
+  for(int i = 0; i < 1048576; i++){
     int* x = (int*)alloc(allocator, 400);
     *x = i;
-    if(i % 64 == 0){
-      printf("%p %i\n", x, *x);
+    if(i % 4096 == 0) printf("!!\n");
+    if(i % 65536 == 0){
+      printf("---\n");
+
+      popFrame(allocator);
+      pushFrame(allocator);
     }
   }
-
-  AllocBlock* last = allocator->lastBlock;
-  AllocBlock* init = allocator->initBlock;
-  AllocBlock* current = init;
-
-  printf("%p %p\n", last, init);
-  do{
-    printf("Still looking. %p\n", current);
-    current = current->nextBlock;
-  }while(current != last);
   */
-  
+
   return 0;
 }

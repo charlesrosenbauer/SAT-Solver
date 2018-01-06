@@ -97,3 +97,49 @@ IntPair* sortByMentions(CNF* cnf){
   free(mentions);
   return pairs;
 }
+
+
+
+
+
+
+
+
+
+
+PersistentByteArray* createByteArray(int size){
+  int level0 = size >> 8;
+  int levelsCount = 0;
+  while(level0 != 0){
+    level0 = level0 >> 5;
+    levelsCount++;
+  }
+
+  PersistentByteArray* ret = malloc(sizeof(PersistentByteArray));
+  ret->size  = size;
+  ret->depth = levelsCount;
+
+  int bottomNodes = (size % 256 == 0)? (size / 256) : (size / 256)+1;
+  char** base = malloc(sizeof(char*) * bottomNodes);
+  for(int i = 0; i < bottomNodes; i++)
+    base[i] = malloc(sizeof(char) * 256);
+
+  int topNodes = bottomNodes;
+  void** prevLayer = (void**)base;
+  while(topNodes > 32){
+    int tmp = topNodes;
+    topNodes = (topNodes % 32 == 0)? (topNodes / 32) : (topNodes / 32)+1;
+
+    PersistentNode* topLayer = malloc(sizeof(PersistentNode) * topNodes);
+    for(int i = 0; i < tmp; i++)
+      topLayer[i/32].nodes[i%32] = prevLayer[i];
+
+    prevLayer = (void**)topLayer;
+  }
+
+  for(int i = 0; i < topNodes; i++)
+    ret->nodes[i] = prevLayer[i];
+
+  free(base);
+  return ret;
+}

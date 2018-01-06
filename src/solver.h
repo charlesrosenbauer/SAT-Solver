@@ -51,7 +51,38 @@ typedef struct{
 
 
 
+typedef struct{
+  void* nodes[32];
+}PersistentNode;
+
+
+
+
+
+
+
+
+
+
+typedef struct{
+  int size;
+  int depth;
+  void* nodes[32];
+}PersistentByteArray;
+
+
+
+
+
+
+
+
+
+
 IntPair* sortByMentions(CNF*);
+PersistentByteArray* createByteArray(int);
+void pbaUnsafeWrite(PersistentByteArray*, int, char);
+
 
 
 
