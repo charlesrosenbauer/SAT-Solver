@@ -108,16 +108,9 @@ IntPair* sortByMentions(CNF* cnf){
 
 
 PersistentByteArray* createByteArray(int size){
-  int level0 = size >> 8;
-  int levelsCount = 0;
-  while(level0 != 0){
-    level0 = level0 >> 5;
-    levelsCount++;
-  }
-
   PersistentByteArray* ret = malloc(sizeof(PersistentByteArray));
   ret->size  = size;
-  ret->depth = levelsCount;
+  ret->depth = 0;
 
   int bottomNodes = (size % 256 == 0)? (size / 256) : (size / 256)+1;
   char** base = malloc(sizeof(char*) * bottomNodes);
@@ -135,6 +128,7 @@ PersistentByteArray* createByteArray(int size){
       topLayer[i/32].nodes[i%32] = prevLayer[i];
 
     prevLayer = (void**)topLayer;
+    ret->depth++;
   }
 
   for(int i = 0; i < topNodes; i++)
@@ -142,4 +136,23 @@ PersistentByteArray* createByteArray(int size){
 
   free(base);
   return ret;
+}
+
+
+
+
+
+
+
+
+
+
+char pbaRead(PersistentByteArray* pba, int index){
+  void** buffer = (void**)pba->nodes;
+  for(int i = pba->depth; i > 1; i--){
+    int thisIndex = (index >> ((5 * i) + 8)) % 32;
+    buffer = ((PersistentNode*)buffer[thisIndex])->nodes;
+  }
+  char* lastBuffer = (char*)buffer;
+  return lastBuffer[index%256];
 }
