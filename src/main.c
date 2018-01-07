@@ -51,8 +51,8 @@ int main(int argc, char** argv){
 
   IntPair* mentions = sortByMentions(&cnf);
 
-  PersistentByteArray* arr = createByteArray(cnf.varnum);
-  printf("%i\n", pbaRead(arr, 10));
+  PersistentByteArray* arr = createByteArray(20000);
+  printf("\n%i\n", (int)pbaRead(arr, 17));
 
   /*
   // I'll worry about the allocator later
