@@ -51,8 +51,15 @@ int main(int argc, char** argv){
 
   IntPair* mentions = sortByMentions(&cnf);
 
-  PersistentByteArray* arr = createByteArray(20000);
-  printf("\n%i\n", (int)pbaRead(arr, 17));
+  int limit = 16384;
+  PersistentByteArray* arr = createByteArray(limit);
+  printf("Depth: %i\n", arr->depth);
+
+  for(int i = 0; i < limit; i += 64){
+    printf("%i %p ", i, pbaPointer(arr, i));
+    printf("%i\n", (int)pbaRead   (arr, i));
+  }
+
 
   /*
   // I'll worry about the allocator later

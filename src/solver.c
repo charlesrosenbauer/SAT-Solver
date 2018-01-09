@@ -116,16 +116,18 @@ PersistentByteArray* createByteArray(int size){
   char** base = malloc(sizeof(char*) * bottomNodes);
   for(int i = 0; i < bottomNodes; i++){
     base[i] = malloc(sizeof(char) * 256);
-  }
 
-  printf("%i\n", bottomNodes);
+    // Testing
+    for(int j = 0; j < 256; j++){
+      base[i][j] = j + i;
+    }
+  }
 
   int topNodes = bottomNodes;
   void** prevLayer = (void**)base;
   while(topNodes > 32){
     int tmp = topNodes;
     topNodes = (topNodes % 32 == 0)? (topNodes / 32) : (topNodes / 32)+1;
-    printf("%i\n", topNodes);
 
     PersistentNode* topLayer = malloc(sizeof(PersistentNode) * topNodes);
     for(int i = 0; i < tmp; i++)
@@ -152,11 +154,43 @@ PersistentByteArray* createByteArray(int size){
 
 
 unsigned char pbaRead(PersistentByteArray* pba, int index){
+  if(index >= pba->size) return 0;
   void** buffer = (void**)pba->nodes;
+
+  if(pba->depth == 0){
+    unsigned char* lastBuffer = (unsigned char*)buffer[index >> 8];
+    return lastBuffer[index % 256];
+  }
+
+  int adjustedIndex = index >> 8;
+
   for(int i = pba->depth; i > 0; i--){
-    int thisIndex = (index >> ((5 * i) + 8)) % 32;
+    int thisIndex = (adjustedIndex >> (5 * i)) % 32;
+    printf("%i -> ", adjustedIndex);
     buffer = ((PersistentNode*)buffer[thisIndex])->nodes;
   }
   unsigned char* lastBuffer = (unsigned char*)buffer;
   return lastBuffer[index%256];
+}
+
+
+
+
+
+
+
+
+
+
+unsigned char* pbaPointer(PersistentByteArray* pba, int index){
+  if(index >= pba->size) return NULL;
+
+  void** buffer = (void**)pba->nodes;
+  for(int i = pba->depth; i > 0; i--){
+    int thisIndex = (index >> ((5 * (i-1)) + 8)) % 32;
+    //printf("T: %i %i\n", index, thisIndex);
+    buffer = ((PersistentNode*)buffer[thisIndex])->nodes;
+  }
+  unsigned char* lastBuffer = (unsigned char*)buffer;
+  return &(lastBuffer[index%256]);
 }

@@ -82,8 +82,8 @@ typedef struct{
 IntPair* sortByMentions(CNF*);
 PersistentByteArray* createByteArray(int);
 void pbaUnsafeWrite(PersistentByteArray*, int, char);
-unsigned char pbaRead       (PersistentByteArray*, int);
-
+unsigned char  pbaRead       (PersistentByteArray*, int);
+unsigned char* pbaPointer    (PersistentByteArray*, int);
 
 
 
