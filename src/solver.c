@@ -2,6 +2,7 @@
 #include "solver.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include "global.h"
 
 
 
@@ -117,10 +118,11 @@ PersistentByteArray* createByteArray(int size){
   for(int i = 0; i < bottomNodes; i++){
     base[i] = malloc(sizeof(char) * 256);
 
-    // Testing
+    #ifdef _TEST_MODE_
     for(int j = 0; j < 256; j++){
       base[i][j] = j + i;
     }
+    #endif
   }
 
   int topNodes = bottomNodes;
@@ -166,7 +168,11 @@ unsigned char pbaRead(PersistentByteArray* pba, int index){
 
   for(int i = pba->depth; i > 0; i--){
     int thisIndex = (adjustedIndex >> (5 * i)) % 32;
+
+    #ifdef _TEST_MODE_
     printf("%i -> ", adjustedIndex);
+    #endif
+
     buffer = ((PersistentNode*)buffer[thisIndex])->nodes;
   }
   unsigned char* lastBuffer = (unsigned char*)buffer;
@@ -183,12 +189,21 @@ unsigned char pbaRead(PersistentByteArray* pba, int index){
 
 
 unsigned char* pbaPointer(PersistentByteArray* pba, int index){
-  if(index >= pba->size) return NULL;
-
+  if(index >= pba->size) return 0;
   void** buffer = (void**)pba->nodes;
+
+  if(pba->depth == 0){
+    unsigned char* lastBuffer = (unsigned char*)buffer[index >> 8];
+    return &(lastBuffer[index % 256]);
+  }
+
+  int adjustedIndex = index >> 8;
+
   for(int i = pba->depth; i > 0; i--){
-    int thisIndex = (index >> ((5 * (i-1)) + 8)) % 32;
-    //printf("T: %i %i\n", index, thisIndex);
+    int thisIndex = (adjustedIndex >> (5 * i)) % 32;
+    #ifdef _TEST_MODE_
+    printf("%i -> ", adjustedIndex);
+    #endif
     buffer = ((PersistentNode*)buffer[thisIndex])->nodes;
   }
   unsigned char* lastBuffer = (unsigned char*)buffer;

@@ -2,6 +2,7 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "stdint.h"
+#include "global.h"
 
 
 
@@ -63,7 +64,9 @@ void* blockAlloc(AllocBlock* block, int size, int align, void** top){
   long newloc = loc + size;
   if((newloc - (long)block->basePtr) >= block->size){
     //Overflow! Go to next block!
+    #ifdef _TEST_MODE_
     printf("Alloc\n");
+    #endif
     block->nextBlock = mkAllocBlock(malloc(block->size), block->size, block);
     *top = block->nextBlock;
     return blockAlloc(block->nextBlock, size, align, top);

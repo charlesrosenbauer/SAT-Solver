@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "alloc.h"
+#include "global.h"
 
 
 
@@ -51,15 +52,16 @@ int main(int argc, char** argv){
 
   IntPair* mentions = sortByMentions(&cnf);
 
+  #ifdef _TEST_MODE_
   int limit = 16384;
-  PersistentByteArray* arr = createByteArray(limit);
+  PersistentByteArray* arr = createByteArray(20000000);
   printf("Depth: %i\n", arr->depth);
 
   for(int i = 0; i < limit; i += 64){
     printf("%i %p ", i, pbaPointer(arr, i));
     printf("%i\n", (int)pbaRead   (arr, i));
   }
-
+  #endif
 
   /*
   // I'll worry about the allocator later
