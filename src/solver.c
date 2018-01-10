@@ -110,40 +110,57 @@ IntPair* sortByMentions(CNF* cnf){
 
 PersistentByteArray* createByteArray(int size){
   PersistentByteArray* ret = malloc(sizeof(PersistentByteArray));
-  ret->size  = size;
+  ret->size = size;
   ret->depth = 0;
-
   int bottomNodes = (size % 256 == 0)? (size / 256) : (size / 256)+1;
-  char** base = malloc(sizeof(char*) * bottomNodes);
+
+  char** blockrefs = malloc(sizeof(char*) * bottomNodes);
   for(int i = 0; i < bottomNodes; i++){
-    base[i] = malloc(sizeof(char) * 256);
+    blockrefs[i] = malloc(sizeof(char) * 256);
 
     #ifdef _TEST_MODE_
-    for(int j = 0; j < 256; j++){
-      base[i][j] = j + i;
-    }
+    for(int j = 0; j < 256; j++)
+      blockrefs[i][j] = j + i;
     #endif
   }
 
-  int topNodes = bottomNodes;
-  void** prevLayer = (void**)base;
-  while(topNodes > 32){
-    int tmp = topNodes;
-    topNodes = (topNodes % 32 == 0)? (topNodes / 32) : (topNodes / 32)+1;
+  if(bottomNodes <= 32){
+    for(int i = 0; i < bottomNodes; i++)
+      ret->nodes[i] = blockrefs[i];
 
-    PersistentNode* topLayer = malloc(sizeof(PersistentNode) * topNodes);
-    for(int i = 0; i < tmp; i++)
-      topLayer[i/32].nodes[i%32] = prevLayer[i];
+    free(blockrefs);
+    return ret;
+  }else{
 
-    prevLayer = (void**)topLayer;
-    ret->depth++;
+    int moveNodes   = bottomNodes;
+    int middleNodes = (bottomNodes % 32 == 0)? (size / 32) : (size / 32)+1;
+    PersistentNode** noderefs = malloc(sizeof(PersistentNode*) * middleNodes);
+
+    while(middleNodes > 32){
+
+      for(int i = 0; i < middleNodes; i++)
+        noderefs[i] = malloc(sizeof(PersistentNode));
+
+      for(int i = 0; i < moveNodes; i++)
+        noderefs[i/32]->nodes[i%32] = blockrefs[i];
+
+      void* tmppt = blockrefs;
+      blockrefs = (char**)noderefs;
+      noderefs  = (PersistentNode**)tmppt;
+
+      moveNodes = middleNodes;
+      middleNodes = (moveNodes % 32 == 0)? (moveNodes / 32) : (moveNodes / 32)+1;
+
+      ret->depth++;
+    }
+
+    for(int i = 0; i < middleNodes; i++)
+      ret->nodes[i] = noderefs[i];
+
+    free(noderefs);
+    free(blockrefs);
+    return ret;
   }
-
-  for(int i = 0; i < topNodes; i++)
-    ret->nodes[i] = prevLayer[i];
-
-  free(base);
-  return ret;
 }
 
 
@@ -166,15 +183,13 @@ unsigned char pbaRead(PersistentByteArray* pba, int index){
 
   int adjustedIndex = index >> 8;
 
-  for(int i = pba->depth; i > 0; i--){
-    int thisIndex = (adjustedIndex >> (5 * i)) % 32;
+  int indexes[16];  // No way anyone's getting this high.
+  for(int i = 0; i < pba->depth; i++)
+    indexes[i] = (adjustedIndex >> (5 * i)) % 32;
 
-    #ifdef _TEST_MODE_
-    printf("%i -> ", adjustedIndex);
-    #endif
+  for(int i = pba->depth-1; i >= 0; i--)
+    buffer = ((PersistentNode*)buffer[indexes[i]])->nodes;
 
-    buffer = ((PersistentNode*)buffer[thisIndex])->nodes;
-  }
   unsigned char* lastBuffer = (unsigned char*)buffer;
   return lastBuffer[index%256];
 }
@@ -199,13 +214,13 @@ unsigned char* pbaPointer(PersistentByteArray* pba, int index){
 
   int adjustedIndex = index >> 8;
 
-  for(int i = pba->depth; i > 0; i--){
-    int thisIndex = (adjustedIndex >> (5 * i)) % 32;
-    #ifdef _TEST_MODE_
-    printf("%i -> ", adjustedIndex);
-    #endif
-    buffer = ((PersistentNode*)buffer[thisIndex])->nodes;
-  }
+  int indexes[16];  // No way anyone's getting this high.
+  for(int i = 0; i < pba->depth; i++)
+    indexes[i] = (adjustedIndex >> (5 * i)) % 32;
+
+  for(int i = pba->depth-1; i >= 0; i--)
+    buffer = ((PersistentNode*)buffer[indexes[i]])->nodes;
+
   unsigned char* lastBuffer = (unsigned char*)buffer;
   return &(lastBuffer[index%256]);
 }
