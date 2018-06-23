@@ -4,4 +4,4 @@
 
 This is a SAT solver I'm writing. Not working yet though.
 
-I'm using persistent data structures and stack allocators to quickly rewind to previous states when conflicts are found.
+I plan to use an experimental approach with this involving a sparse bit matrix and a ton of bitwise operations.
