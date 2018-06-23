@@ -162,12 +162,11 @@ int parseNum(ParserState* s){
 
 
 
-int ct = 0;
 
 
 
-Clause* parseClause(ParserState* s){
-  ct++;
+
+Clause* parseClause(ParserState* s, int printClauses){
   int vals[512];
   int n = 511;
   for(int i = 0; i < 512; i++){
@@ -188,10 +187,12 @@ Clause* parseClause(ParserState* s){
   if(n == 0) return NULL;
 
   //Everything went fine.
-  printf("L: %i :: ", s->line);
-  for(int i = 0; i < n; i++)
-    printf("%i ", vals[i]);
-  printf("\n");
+  if(printClauses){
+    printf("L: %i :: ", s->line);
+    for(int i = 0; i < n; i++)
+      printf("%i ", vals[i]);
+    printf("\n");
+  }
 
   //Temporary mallocs. Use faster allocator later.
   Clause* clause = malloc(sizeof(Clause));
@@ -211,7 +212,7 @@ Clause* parseClause(ParserState* s){
 
 
 
-CNF parseCNF(char* input, int filesize){
+CNF parseCNF(char* input, int filesize, int printClauses){
   ParserState s = {1, 1, 0, filesize, input, input};
   CNF cnfState  = {0, 0, NULL};
 
@@ -243,7 +244,7 @@ CNF parseCNF(char* input, int filesize){
       }
     }else{
       if((clausesFound >= cnfState.clausenum) && (cnfState.clausenum != 0)) return cnfState;
-      Clause* c = parseClause(&s);
+      Clause* c = parseClause(&s, printClauses);
       if(c == NULL){
         nextChar(&s);
       }else{

@@ -12,7 +12,7 @@
 
 
 
-CNF parseCNF(char*, int);
+CNF parseCNF(char*, int, int);
 
 
 

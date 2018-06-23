@@ -67,33 +67,3 @@ void quicksort(IntPair* arr, int lo, int hi){
     quicksort(arr, j+1, hi );
   }
 }
-
-
-
-
-
-
-
-
-
-
-IntPair* sortByMentions(CNF* cnf){
-
-  int mentionsize = cnf->varnum;
-  int* mentions   = countMentions(cnf);
-
-  IntPair* pairs = malloc(sizeof(IntPair) * mentionsize);
-
-  for(int i = 0; i < mentionsize; i++){
-    pairs[i].val = i + 1;
-    pairs[i].x   = mentions[i];
-  }
-
-  quicksort(pairs, 0, mentionsize-1);
-
-  //for(int i = 0; i < mentionsize; i++)
-  //  mentions[i] = pairs[i].val;
-
-  free(mentions);
-  return pairs;
-}

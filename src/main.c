@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "global.h"
+#include "time.h"
 
 
 
@@ -22,6 +23,8 @@ int main(int argc, char** argv){
     printf("No file parameter.\n");
     return 1;
   }
+
+  clock_t t = clock();
 
   pFile = fopen(argv[1], "rb");
   if(pFile == NULL) {
@@ -45,11 +48,11 @@ int main(int argc, char** argv){
     return 4;
   }
 
+  CNF cnf = parseCNF(buffer, lSize, 0);
+  t = clock() - t;
 
-  CNF cnf = parseCNF(buffer, lSize);
-  printf("%i %i %p\n\n", cnf.varnum, cnf.clausenum, cnf.clauses);
+  printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, cnf.clauses, ((float)t / CLOCKS_PER_SEC));
 
-  IntPair* mentions = sortByMentions(&cnf);
 
 
   return 0;
