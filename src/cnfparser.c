@@ -117,38 +117,10 @@ int parseNum(ParserState* s){
   int cond = 1;
   while (cond) {
 
-    switch(*s->position){
-      case '0': number *= 10;
-      break;
-
-      case '1': number = (number * 10) + 1;
-      break;
-
-      case '2': number = (number * 10) + 2;
-      break;
-
-      case '3': number = (number * 10) + 3;
-      break;
-
-      case '4': number = (number * 10) + 4;
-      break;
-
-      case '5': number = (number * 10) + 5;
-      break;
-
-      case '6': number = (number * 10) + 6;
-      break;
-
-      case '7': number = (number * 10) + 7;
-      break;
-
-      case '8': number = (number * 10) + 8;
-      break;
-
-      case '9': number = (number * 10) + 9;
-      break;
-
-      default: cond = 0;
+    if((*s->position <= '9') && (*s->position >= '0')){
+      number = (number * 10) + (*s->position - '0');
+    }else{
+      cond = 0;
     }
 
     if(cond) nextChar(s);
