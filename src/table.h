@@ -31,12 +31,12 @@ typedef int32_t IX;
 
 
 
-typedef struct{
+typedef struct {
   uint64_t vals[4];
   uint64_t mask[4];
 
-  TABLECELL* xnext;
-  TABLECELL* ynext;
+  void* xnext;
+  void* ynext;
 
   IX x, y;
 }TABLECELL;
@@ -94,6 +94,19 @@ typedef struct{
   TABLECELL* allCells;
   uint64_t cellCount;
 }TABLE;
+
+
+
+
+
+
+
+
+
+
+void      freeTable(TABLE*);
+TABLECELL initCell (IX, IX);
+TABLE*    initTable(CNF*, int64_t);
 
 
 
