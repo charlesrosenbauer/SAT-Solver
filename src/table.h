@@ -63,11 +63,19 @@ typedef struct{
 
 
 
+/*
+  Columns in the table will be stored in an order convenient for certain types
+  of operations, standard lookup not being one. As a result, we need some extra
+  metadata to keep track of the order this data is stored in to make standard
+  lookups still reasonably fast.
+*/
 typedef struct{
   TABLECELL* top;
   TABLECELL* bottom;
 
   IXPAIR* rangeData;
+
+  TABLECELL** columnMap;
 
   IX columnSize;
 }COLUMNHEADER;

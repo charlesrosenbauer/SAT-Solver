@@ -59,7 +59,7 @@ TABLECELL initCell(IX x, IX y){
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!WIP!!!!WIP!!!!WIP!!!!
-*/!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!*/
 TABLE* initTable(CNF* c, int64_t sizeSuggest){
 
   TABLE* ret = malloc(sizeof(TABLE));
@@ -82,6 +82,9 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
   // Generate Table Cells
 
   uint64_t cellIndex = 0;
+
+  TABLECELL* columnPad = malloc(sizeof(TABLECELL) * c->clausenum);
+  int stackTop = 0;
 
   for(int i = 0; i < ret->cols; i++){   // Parameters
     for(int j = 0; j < ret->rows; j++){   // Clauses
@@ -109,28 +112,23 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
           isCellModified = 1;
         }
       }
-
-      // TODO:
-      // If Cell is nonzero, add it to the cell index. If there's not enough
-      // room, retry the whole initialization with a bigger size.
-
-      if(isCellModified){
-        if(cellIndex >= sizeSuggest){
-          // Memory allocated for table is too small! Allocate more and retry!
-          freeTable(ret);
-          return initTable(c, sizeSuggest * 2);
-        }
-
-
-        cellIndex++;
-      }
+      columnPad[stackTop] = cell;
+      stackTop++;
     }
+
+    // TODO: Sort columnPad by bit patterns, generate column header.
+
+    COLUMNHEADER* header = malloc(sizeof(COLUMNHEADER));
+
+    // TODO: Transfer column to Table contents.
+
   }
 
   ret->cellCount = cellIndex + 1;
 
 
 
+  free(columnPad);
 
   return ret;
 }

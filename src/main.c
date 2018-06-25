@@ -3,6 +3,7 @@
 #include "stdlib.h"
 #include "global.h"
 #include "time.h"
+#include "table.h"
 
 
 
@@ -51,7 +52,9 @@ int main(int argc, char** argv){
   CNF cnf = parseCNF(buffer, lSize, 0);
   t = clock() - t;
 
-  printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, cnf.clauses, ((float)t / CLOCKS_PER_SEC));
+  TABLE* table = initTable(&cnf, 0);
+
+  printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, table, ((float)t / CLOCKS_PER_SEC));
 
 
 
