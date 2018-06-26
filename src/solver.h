@@ -32,27 +32,4 @@ typedef struct{
 
 
 
-
-
-
-
-
-
-typedef struct{
-  int val, x;
-}IntPair;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif
