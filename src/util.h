@@ -1,6 +1,8 @@
 #ifndef __UTIL_HEADER__
 #define __UTIL_HEADER__
 
+#include "stdint.h"
+
 
 
 
@@ -24,6 +26,8 @@ typedef struct{
 
 
 void quicksort(IntPair*, int, int);
+int cttz(uint64_t);
+uint64_t isomsb(uint64_t);
 
 
 
