@@ -47,7 +47,7 @@ void quicksort(IntPair* arr, int lo, int hi){
 
 
 
-int cttz(uint64_t v){
+inline int cttz(uint64_t v){
   // This should probably be optimized. These if statements will kill branch performance.
 
   int c = 32;
@@ -72,7 +72,7 @@ int cttz(uint64_t v){
 
 
 
-uint64_t isomsb(uint64_t v){
+inline uint64_t isomsb(uint64_t v){
 
   uint64_t x = v >> 1;
   x |= (x >>  1);
@@ -81,6 +81,19 @@ uint64_t isomsb(uint64_t v){
   x |= (x >>  8);
   x |= (x >> 16);
   x |= (x >> 32);
-  
+
   return v & ~x;
+}
+
+
+
+
+
+
+
+
+
+
+inline int ctlz (uint64_t v){
+  return cttz(isomsb(v));
 }
