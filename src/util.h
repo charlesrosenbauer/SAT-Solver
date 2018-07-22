@@ -25,10 +25,11 @@ typedef struct{
 
 
 
-void quicksort(IntPair*, int, int);
+void quicksort(IntPair*, int, int);   // Sorts IntPairs by x
 int cttz(uint64_t);
 uint64_t isomsb(uint64_t);
 int ctlz(uint64_t);
+int popcount(uint64_t);
 
 
 

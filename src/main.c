@@ -4,6 +4,8 @@
 #include "global.h"
 #include "time.h"
 #include "table.h"
+#include "util.h"
+#include "predictor.h"
 
 
 
@@ -52,9 +54,12 @@ int main(int argc, char** argv){
   CNF cnf = parseCNF(buffer, lSize, 0);
   t = clock() - t;
 
-  TABLE* table = initTable(&cnf, 0);
+  TRANSLATION trans = reorderVars(&cnf);
+  printf("%f\n", translationScore(trans, cnf));
 
-  printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, table, ((float)t / CLOCKS_PER_SEC));
+  //TABLE* table = initTable(&cnf, 0);
+
+  printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, NULL, ((float)t / CLOCKS_PER_SEC));
 
 
 

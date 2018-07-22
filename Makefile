@@ -1,2 +1,2 @@
 all:
-	clang -O3 src/*.c -o bin/solver
+	clang -O3 -lm -lSDL src/*.c -o bin/solver

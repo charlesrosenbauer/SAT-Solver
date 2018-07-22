@@ -97,3 +97,23 @@ inline uint64_t isomsb(uint64_t v){
 inline int ctlz (uint64_t v){
   return cttz(isomsb(v));
 }
+
+
+
+
+
+
+
+
+
+
+inline int popcount(uint64_t x){
+  const uint64_t m0  = 0x5555555555555555;
+  const uint64_t m1  = 0x3333333333333333;
+  const uint64_t m2  = 0x0f0f0f0f0f0f0f0f;
+  const uint64_t m3 = 0x0101010101010101;
+  x -= (x >> 1) & m0;
+  x = (x & m1) + ((x >> 2) & m1);
+  x = (x + (x >> 4)) & m2;
+  return (x * m3) >> 56;
+}

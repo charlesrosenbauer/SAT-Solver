@@ -32,4 +32,18 @@ typedef struct{
 
 
 
+
+
+
+
+
+
+typedef struct{
+  int* trans;
+  int  size;
+}TRANSLATION;
+
+
+
+
 #endif
