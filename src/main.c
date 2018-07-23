@@ -54,7 +54,12 @@ int main(int argc, char** argv){
   CNF cnf = parseCNF(buffer, lSize, 0);
   t = clock() - t;
 
-  TRANSLATION trans = reorderVars(&cnf);
+  TRANSLATION trans = reorderVars(&cnf, 320);
+  printf("%f\n", translationScore(trans, cnf));
+
+  for(int i = 0; i < trans.size; i++){
+    trans.trans[i] = i;
+  }
   printf("%f\n", translationScore(trans, cnf));
 
   //TABLE* table = initTable(&cnf, 0);

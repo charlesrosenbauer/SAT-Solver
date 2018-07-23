@@ -7,7 +7,7 @@
 #include "SDL/SDL.h"
 
 
-#define GRAPHDISTRIBUTION
+//#define GRAPHDISTRIBUTION
 //#define SPREADFORCE
 
 
@@ -32,13 +32,14 @@ typedef struct{
   closer to variables with shared clauses. Then it places them in an order based
   on where they land in this space.
 */
-TRANSLATION reorderVars(CNF* cnf){
+TRANSLATION reorderVars(CNF* cnf, int passes){
 #ifdef GRAPHDISTRIBUTION
   SDL_Init(SDL_INIT_EVERYTHING);
   SDL_Surface* screen = SDL_SetVideoMode(512, 512, 32, 0);
 #endif
 
   TRANSLATION ret;
+  ret.size  = cnf->varnum;
   ret.trans = malloc(sizeof(int) * cnf->varnum);
 
   MOVEVAR* vars = malloc(sizeof(MOVEVAR) * cnf->varnum);
@@ -54,11 +55,15 @@ TRANSLATION reorderVars(CNF* cnf){
   int chunknum  = ((cnf->varnum % 256) == 0)? (cnf->varnum / 256) : (cnf->varnum / 256) + 1;
   float* chunks = malloc(sizeof(float) * chunknum);
 
-  for(int iter = 0; iter < 320; iter++){
+  for(int iter = 0; iter < passes; iter++){
+
+#ifdef GRAPHDISTRIBUTION
     uint32_t* pix = screen->pixels;
+
     for(int i = 0; i < 262144; i++){
       pix[i] = 0;
     }
+#endif
 
     /*
       For each clause, get space indices of each referenced var, and push them
@@ -81,7 +86,7 @@ TRANSLATION reorderVars(CNF* cnf){
           MOVEVAR mvar  = vars[index];
           float diff    = (avg - mvar.spaceIndex);
           float epsilon = (diff < worddist)? 0.005 : (diff < blckdist)? 0.007 : 0.009;
-          mvar.spaceForce += (avg - mvar.spaceIndex) * epsilon * c.numvars;// * 0.1;
+          mvar.spaceForce += (avg - mvar.spaceIndex) * epsilon * c.numvars * 0.01;
           if(iter == 0) mvar.clausect++;
 
           vars[index] = mvar;
@@ -230,7 +235,9 @@ float translationScore(TRANSLATION t, CNF cnf){
     for(int j = 0; j < c.numvars; j++){
       bits |= 1 << ((t.trans[abs(c.vars[j])] / 256) % 64);
     }
-    ret += ((float)popcount(bits)) / c.numvars;
+    int pct = popcount(bits);   // There seems to be a bug somewhere here, where some numbers are getting an extra 32 bits added.
+    ret += (pct > c.numvars)? 1 : (float)pct / c.numvars;
   }
+
   return ret / cnf.clausenum;
 }

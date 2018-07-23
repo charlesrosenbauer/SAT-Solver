@@ -13,7 +13,7 @@
 
 
 
-TRANSLATION reorderVars(CNF*);
+TRANSLATION reorderVars(CNF*, int);
 float translationScore(TRANSLATION, CNF);
 
 
