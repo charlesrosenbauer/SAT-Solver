@@ -51,49 +51,9 @@ typedef struct {
 
 
 typedef struct{
-  IX x, y;
-}IXPAIR;
-
-
-
-
-
-
-
-
-
-
-/*
-  Columns in the table will be stored in an order convenient for certain types
-  of operations, standard lookup not being one. As a result, we need some extra
-  metadata to keep track of the order this data is stored in to make standard
-  lookups still reasonably fast.
-*/
-typedef struct{
-  TABLECELL* top;
-  TABLECELL* bottom;
-
-  IXPAIR* rangeData;
-
-  TABLECELL** columnMap;
-
-  IX columnSize;
-}COLUMNHEADER;
-
-
-
-
-
-
-
-
-
-
-typedef struct{
   TABLECELL** paramIndex;
   TABLECELL** clauseIndex;
-
-  COLUMNHEADER* columns;
+  IX* columnixs;
 
   IX cols;      // Parameters
   IX rows;      // Clauses
@@ -101,6 +61,11 @@ typedef struct{
   // This data likely will just be here for cleanup purposes.
   TABLECELL* allCells;
   uint64_t cellCount;
+
+  uint64_t* predictions;
+  uint64_t* currentvals;
+  IX currentindex;
+  IX varct;
 }TABLE;
 
 
