@@ -1,6 +1,7 @@
 #include "table.h"
 #include "stdint.h"
 #include "stdlib.h"
+#include "stdio.h"
 #include "util.h"
 
 
@@ -88,15 +89,14 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
     */
     uint64_t hash =  0;
     uint64_t last = -1;
+    uint64_t prev = -1;
 
     for(int j = 0; j < cl.numvars; j++){
-      int x = cl.vars[j] / 256;
+      int x = abs(cl.vars[j]) / 256;
       uint64_t hashBit = (1 << (x % 64));
       if(x != last){
-        last = x;
-
         // Check hash
-        if(hashBit & hash){
+        if((x != prev) && (hashBit & hash)){
           int matches = 0;
           // Worst-case check
           for(int k = 0; k < j; k++)
@@ -107,9 +107,13 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
           cellct++;
           hash |= hashBit;
         }
+        prev = last;
+        last = x;
       }
     }
   }
+
+  printf("CELLCT: %i\n", cellct);
 
 
   return ret;

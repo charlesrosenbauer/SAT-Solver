@@ -52,9 +52,10 @@ int main(int argc, char** argv){
   }
 
   CNF cnf = parseCNF(buffer, lSize, 0);
-  t = clock() - t;
 
-  //TABLE* table = initTable(&cnf, 0);
+
+  TABLE* table = initTable(&cnf, 0);
+    t = clock() - t;
 
   printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, NULL, ((float)t / CLOCKS_PER_SEC));
 
