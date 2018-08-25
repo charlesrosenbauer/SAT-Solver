@@ -61,6 +61,88 @@ TABLECELL initCell(IX x, IX y){
 
 
 
+
+inline int lessTCell(TABLECELL* a, TABLECELL* b){
+  if(a->x < b->x) return 1;
+  if(a->x > b->x) return 0;
+
+  for(int i = 0; i < 4; i++){
+    if(a->mask[i] < b->mask[i]) return 1;
+    if(a->mask[i] > b->mask[i]) return 0;
+  }
+
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+inline int moreTCell(TABLECELL* a, TABLECELL* b){
+  if(a->x > b->x) return 1;
+  if(a->x < b->x) return 0;
+
+  for(int i = 0; i < 4; i++){
+    if(a->mask[i] > b->mask[i]) return 1;
+    if(a->mask[i] < b->mask[i]) return 0;
+  }
+
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+void sortTCells(TABLECELL* arr, int lo, int hi){
+  int pivot, j, i;
+  TABLECELL temp;
+  if(lo < hi){
+    pivot = lo;
+    i = lo;
+    j = hi;
+
+    while(i < j){
+
+      while(!(moreTCell(&arr[i], &arr[pivot])) && (i < hi)) i++;
+
+      while(moreTCell(&arr[j], &arr[pivot])) j--;
+
+      if(i < j){
+        temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+      }
+    }
+
+    temp = arr[pivot];
+    arr[pivot] = arr[j];
+    arr[j] = temp;
+    sortTCells(arr, lo , j-1);
+    sortTCells(arr, j+1, hi );
+  }
+}
+
+
+
+
+
+
+int min(int a, int b){
+  return (a < b)? a : b;
+}
+
+
 /*!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!WIP!!!!WIP!!!!WIP!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!*/
@@ -100,7 +182,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
           int matches = 0;
           // Worst-case check
           for(int k = 0; k < j; k++)
-            matches += (cl.vars[k] == cl.vars[j]);
+            matches += (abs(cl.vars[k]/256) == abs(cl.vars[j]/256));
 
           cellct += matches != 0;  // Increment pass only if no matches
         }else{
@@ -115,6 +197,57 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
 
   printf("CELLCT: %i\n", cellct);
 
+  TABLECELL* allCells = malloc(sizeof(TABLECELL) * cellct);
+
+
+  /*
+    Fill allCells with tablecells
+  */
+  int cellTop = 0;
+  for(int i = 0; i < c->clausenum; i++){
+    Clause cl = c->clauses[i];
+
+    int stack[1024];
+    int top = cl.numvars;
+    for(int j = 0; j < cl.numvars; j++) stack[j] = cl.vars[j];
+
+    while(top > 0){
+      int index = abs(stack[0]) / 256;
+      int newtop = top;
+      allCells[cellTop].y = i;
+      for(int k = 0; k < 4; k++){
+        allCells[cellTop].vals[k] = 0;
+        allCells[cellTop].mask[k] = 0;
+      }
+      int newbot = 0;
+      for(int j = 0; j < newtop; j++){
+        int x = abs(stack[j]);
+        if((x/256) == index){
+          int n = (stack[j] < 0)? 0 : 1;
+          allCells[cellTop].mask[(x/64)%4] |= (1 << (x%64));
+          allCells[cellTop].vals[(x/64)%4] |= (n << (x%64));
+          newtop--;
+        }else{
+          stack[newbot] = stack[j];
+          newbot++;
+        }
+        allCells[cellTop].x = x / 256;
+      }
+      cellTop++;
+      top = newtop;
+    }
+  }
+
+  /*
+    Sort tablecells
+  */
+  sortTCells(allCells, 0, cellct);
+
+
+  for(int i = 0; i < min(16, cellct); i++){
+    TABLECELL t = allCells[i];
+    printf("x%i y%i || %lu %lu %lu %lu\n", t.x, t.y, t.mask[0], t.mask[1], t.mask[2], t.mask[3]);
+  }
 
   return ret;
 }
