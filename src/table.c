@@ -274,10 +274,17 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
   for(int i = 0; i < cellTop; i++){
     TABLECELL* cell = &(allCells[i]);
 
+    // Attempt to link to clauseixs
     IX clauseix = ret->clauseixs[cell->y];
     if(clauseix == -1){
+      // Clauseix is untaken, claim it
       ret->clauseixs[cell->y] = i;
     }else{
+      /*
+         If clauseix is already taken, jump to the associated node and define
+         it's xnext value. That way, clauseixs references a linked list of cells
+         That all belong to the same clause
+      */
       TABLECELL *here = &(allCells[clauseix]);
       while(here->xnext != NULL){
         here = here->xnext;
@@ -285,6 +292,14 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
       here->xnext = cell;
     }
 
+    /*
+        Link cells to the next cell in their column.
+        If the cell is the last in it's column, leave it null.
+        This forms a linked list of cells in each column, though the
+        organization of the table kind of makes this a little redundant. Oh
+        well, it's a fast way to check if we're at the end of a column with a
+        lower change of a cache miss.
+    */
     if((i + 1) < cellTop){
       if(allCells[i+1].y != cell->y)
         cell->ynext = NULL;
@@ -293,8 +308,6 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
     }else{
       cell->ynext = NULL;
     }
-
-    int tablePercent = cellTop / 10;
   }
 
   printf("Table linked.\n");
