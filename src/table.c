@@ -212,6 +212,8 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
 
       // Initialize Table Cell
       allCells[cellTop].y = i;
+      allCells[cellTop].xnext = NULL;
+      allCells[cellTop].ynext = NULL;
       for(int k = 0; k < 4; k++){
         allCells[cellTop].vals[k] = 0;
         allCells[cellTop].mask[k] = 0;
@@ -243,8 +245,59 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
   /*
     Sort tablecells
   */
+  printf("Sorting Table...\n");
   sortTCells(allCells, 0, cellTop-1);
+  printf("Table Sorted.\n");
 
+  /*
+    Initialize Table Data
+  */
+  ret->clauseixs = malloc(sizeof(IX) * c->clausenum);
+  ret->columnixs = malloc(sizeof(IX) * c->varnum);
+  ret->cellCount = cellTop;
+  ret->varct     = c->varnum;
+  ret->cols      = (c->varnum % 256)? (c->varnum / 256)+1 : (c->varnum / 256);
+  ret->rows      = c->clausenum;
+  ret->allCells  = allCells;
+
+  for(int i = 0; i < c->clausenum; i++)
+    ret->clauseixs[i] = -1;
+
+  for(int i = 0; i < c->varnum; i++)
+    ret->columnixs[i] = -1;
+
+  /*
+    Link Table Cells
+  */
+  printf("Linking up SAT Table...\n");
+
+  for(int i = 0; i < cellTop; i++){
+    TABLECELL* cell = &(allCells[i]);
+
+    IX clauseix = ret->clauseixs[cell->y];
+    if(clauseix == -1){
+      ret->clauseixs[cell->y] = i;
+    }else{
+      TABLECELL *here = &(allCells[clauseix]);
+      while(here->xnext != NULL){
+        here = here->xnext;
+      }
+      here->xnext = cell;
+    }
+
+    if((i + 1) < cellTop){
+      if(allCells[i+1].y != cell->y)
+        cell->ynext = NULL;
+      else
+        cell->ynext = &(allCells[i+1]);
+    }else{
+      cell->ynext = NULL;
+    }
+
+    int tablePercent = cellTop / 10;
+  }
+
+  printf("Table linked.\n");
 
   return ret;
 }

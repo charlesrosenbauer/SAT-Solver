@@ -51,8 +51,7 @@ typedef struct {
 
 
 typedef struct{
-  TABLECELL** paramIndex;
-  TABLECELL** clauseIndex;
+  IX* clauseixs;
   IX* columnixs;
 
   IX cols;      // Parameters
@@ -63,8 +62,6 @@ typedef struct{
   uint64_t cellCount;
 
   uint64_t* predictions;
-  uint64_t* currentvals;
-  IX currentindex;
   IX varct;
 }TABLE;
 
