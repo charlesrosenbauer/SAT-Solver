@@ -206,7 +206,7 @@ CNF parseCNF(char* input, int filesize, int printClauses){
         cnfState.varnum    = parseNum(&s);
         nextChar(&s);
         cnfState.clausenum = parseNum(&s);
-        nextChar(&s);
+        //nextChar(&s);
         cnfState.clauses   = malloc(sizeof(Clause) * cnfState.clausenum);
         hasFoundParameters = 1;
         printf("p cnf %i %i\n", cnfState.varnum, cnfState.clausenum);
