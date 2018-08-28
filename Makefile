@@ -3,3 +3,6 @@ all:
 
 debug:
 	clang -O3 -g -lm -lSDL src/*.c -o bin/solver
+
+slow:
+	clang -O2 -g -lm -lSDL src/*.c -o bin/solver
