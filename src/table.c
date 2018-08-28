@@ -204,7 +204,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
   for(int i = 0; i < c->clausenum; i++){
     Clause cl = c->clauses[i];
 
-    int stack[1024];
+    int stack[8192];
     int top = cl.numvars;
     for(int j = 0; j < cl.numvars; j++) stack[j] = cl.vars[j];
 
