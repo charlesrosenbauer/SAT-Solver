@@ -139,9 +139,9 @@ int parseNum(ParserState* s){
 
 
 Clause* parseClause(ParserState* s, int printClauses){
-  int vals[PARLIMIT];
-  int n = PARLIMIT-1;
-  for(int i = 0; i < PARLIMIT; i++){
+  int vals[PARLIMIT+1];
+  int n = PARLIMIT;
+  for(int i = 0; i <= PARLIMIT; i++){
     nextSymb(s);
     vals[i] = parseNum(s);
     if(vals[i] == 0){
@@ -152,7 +152,7 @@ Clause* parseClause(ParserState* s, int printClauses){
 
   next:
   if(vals[n] != 0){
-    printf("Exceeded maximum number of parameters per clause! Line:%i.\n", s->line);
+    printf("Exceeded maximum number of parameters per clause! Limit is %i. Line:%i.\n", PARLIMIT-1, s->line);
     exit(5);
   }
 
