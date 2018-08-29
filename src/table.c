@@ -14,21 +14,11 @@
 
 
 void freeTable(TABLE* t){
-  /*
-  for(int i = 0; i < t->cols; i++)
-    free(t->paramIndex[i]);
-  free(t->paramIndex);
-
-  for(int i = 0; i < t->rows; i++)
-    free(t->clauseIndex[i]);
-  free(t->clauseIndex);
-
-  free(t->columns);
-
+  free(t->clauseixs);
+  free(t->columnixs);
   free(t->allCells);
-
+  free(t->predictions);
   free(t);
-  */
 }
 
 
@@ -204,7 +194,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
   for(int i = 0; i < c->clausenum; i++){
     Clause cl = c->clauses[i];
 
-    int stack[8192];
+    int stack[PARLIMIT];
     int top = cl.numvars;
     for(int j = 0; j < cl.numvars; j++) stack[j] = cl.vars[j];
 
@@ -301,10 +291,12 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
         lower change of a cache miss.
     */
     if((i + 1) < cellTop){
-      if(allCells[i+1].y != cell->y)
+      if(allCells[i+1].x != cell->x){
         cell->ynext = NULL;
-      else
+        ret->columnixs[allCells[i+1].x] = i+1;
+      }else{
         cell->ynext = &(allCells[i+1]);
+      }
     }else{
       cell->ynext = NULL;
     }

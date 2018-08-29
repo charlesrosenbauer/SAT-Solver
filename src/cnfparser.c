@@ -139,9 +139,9 @@ int parseNum(ParserState* s){
 
 
 Clause* parseClause(ParserState* s, int printClauses){
-  int vals[8192];
-  int n = 8191;
-  for(int i = 0; i < 8192; i++){
+  int vals[PARLIMIT];
+  int n = PARLIMIT-1;
+  for(int i = 0; i < PARLIMIT; i++){
     nextSymb(s);
     vals[i] = parseNum(s);
     if(vals[i] == 0){
