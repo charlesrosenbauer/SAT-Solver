@@ -57,11 +57,9 @@ typedef struct{
   IX cols;      // Parameters
   IX rows;      // Clauses
 
-  // This data likely will just be here for cleanup purposes.
   TABLECELL* allCells;
   uint64_t cellCount;
 
-  uint64_t* predictions;
   IX varct;
 }TABLE;
 

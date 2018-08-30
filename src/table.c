@@ -17,7 +17,6 @@ void freeTable(TABLE* t){
   free(t->clauseixs);
   free(t->columnixs);
   free(t->allCells);
-  free(t->predictions);
   free(t);
 }
 
