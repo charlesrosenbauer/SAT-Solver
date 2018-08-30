@@ -127,9 +127,40 @@ void sortTCells(TABLECELL* arr, int lo, int hi){
 
 
 
+
+
+
+
 int min(int a, int b){
   return (a < b)? a : b;
 }
+
+
+
+
+
+
+
+
+
+
+void printTableSubset(TABLE* t){
+  int cellTop = t->cellCount;
+  TABLECELL* cs = t->allCells;
+  for(int i = 1; i < min(10000, cellTop); i+=10){
+    printf("%06i %06i %#018lx %#018lx %#018lx %#018lx %p %p\n",
+      cs[i].x,
+      cs[i].y,
+      cs[i].mask[0],
+      cs[i].mask[1],
+      cs[i].mask[2],
+      cs[i].mask[3],
+      cs[i].ynext,
+      cs[i].xnext);
+  }
+}
+
+
 
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -300,6 +331,8 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
       cell->ynext = NULL;
     }
   }
+
+  printTableSubset(ret);
 
   printf("Table linked.\n");
 
