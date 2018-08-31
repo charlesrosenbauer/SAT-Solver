@@ -163,9 +163,11 @@ void printTableSubset(TABLE* t){
 
 
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!WIP!!!!WIP!!!!WIP!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!*/
+
+
+
+
+
 TABLE* initTable(CNF* c, int64_t sizeSuggest){
 
   TABLE* ret = malloc(sizeof(TABLE));
@@ -332,7 +334,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
     }
   }
 
-  printTableSubset(ret);
+  //printTableSubset(ret);
 
   printf("Table linked.\n");
 
