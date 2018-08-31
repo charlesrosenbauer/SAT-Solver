@@ -2,6 +2,8 @@
 #define __SOLVER_HEADER__
 
 
+#include "stdint.h"
+
 
 
 
@@ -51,9 +53,17 @@ typedef struct{
 
 
 typedef struct{
-  int* trans;
-  int  size;
-}TRANSLATION;
+  uint64_t* cstdata;
+  uint64_t* cstmask;
+  uint64_t* prddata;
+
+  int64_t*  propixs;
+
+  int32_t*  unsatct;
+  int32_t*  fstsat;
+
+  int clausect, varct;
+}SOLVERSTATE;
 
 
 
