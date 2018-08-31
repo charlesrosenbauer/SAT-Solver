@@ -53,16 +53,23 @@ typedef struct{
 
 
 typedef struct{
+
+  // Constants
   uint64_t* cstdata;
   uint64_t* cstmask;
+
+  // Predictions
   uint64_t* prddata;
 
+  // Unit Propagation
   int64_t*  propixs;
 
+  // Clause Satisifaction
   int32_t*  unsatct;
   int32_t*  fstsat;
 
-  int clausect, varct;
+  // Sizes
+  int clausect, varct, varsz;
 }SOLVERSTATE;
 
 
