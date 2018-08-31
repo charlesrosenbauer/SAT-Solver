@@ -69,3 +69,21 @@ SOLVERSTATE makeSolverState(CNF* cnf){
 
   return ret;
 }
+
+
+
+
+
+
+
+
+
+
+void freeSolverState(SOLVERSTATE* s){
+  free(s->cstdata);
+  free(s->cstmask);
+  free(s->prddata);
+  free(s->propixs);
+  free(s->unsatct);
+  free(s->fstsat);
+}
