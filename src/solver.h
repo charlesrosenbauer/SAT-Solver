@@ -68,8 +68,13 @@ typedef struct{
   int32_t*  unsatct;
   int32_t*  fstsat;
 
+  uint64_t* satclause;
+
+  uint64_t* currentdata;
+  uint64_t  workix;
+
   // Sizes
-  int clausect, varct, varsz;
+  int clausect, varct, clausesz, varsz;
 }SOLVERSTATE;
 
 

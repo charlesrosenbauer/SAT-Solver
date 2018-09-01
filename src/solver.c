@@ -49,11 +49,15 @@ SOLVERSTATE makeSolverState(CNF* cnf){
   ret.cstdata = malloc(sizeof(uint64_t) * ret.varsz);
   ret.cstmask = malloc(sizeof(uint64_t) * ret.varsz);
   ret.prddata = malloc(sizeof(uint64_t) * ret.varsz);
+  ret.currentdata = malloc(sizeof(uint64_t) * ret.varsz);
   for(int i = 0; i < ret.varsz; i++){
     ret.cstdata[i] = 0;
     ret.cstmask[i] = 0;
     ret.prddata[i] = 0;
+    ret.currentdata[i] = 0;
   }
+
+  ret.workix = 0;
 
   ret.propixs = malloc(sizeof(uint64_t) * ret.varct);
   for(int i = 0; i < ret.varct; i++){
@@ -65,6 +69,12 @@ SOLVERSTATE makeSolverState(CNF* cnf){
   for(int i = 0; i < ret.clausect; i++){
     ret.unsatct[i] = cnf->clauses[i].numvars;
     ret.fstsat [i] = 0;
+  }
+
+  ret.clausesz  = (cnf->clausenum % 64)? (cnf->clausenum/64)+1 : (cnf->clausenum/64);
+  ret.satclause = malloc(sizeof(uint64_t) * ret.clausesz);
+  for(int i = 0; i < ret.clausesz; i++){
+    ret.satclause[i] = 0;
   }
 
   return ret;
@@ -86,4 +96,7 @@ void freeSolverState(SOLVERSTATE* s){
   free(s->propixs);
   free(s->unsatct);
   free(s->fstsat);
+  free(s->satclause);
+  free(s->currentdata);
+  free(s);
 }
