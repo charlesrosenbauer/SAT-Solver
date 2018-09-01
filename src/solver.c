@@ -2,6 +2,8 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "global.h"
+#include "table.h"
+#include "util.h"
 
 
 
@@ -99,4 +101,41 @@ void freeSolverState(SOLVERSTATE* s){
   free(s->satclause);
   free(s->currentdata);
   free(s);
+}
+
+
+
+
+
+
+
+
+
+
+int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
+
+  int csts = 0;
+  for(int i = 0; i < c->clausenum; i++){
+    if(c->clauses[i].numvars == 1){
+      int cstx = c->clauses[i].vars[0];
+      int csti = abs(cstx);
+      uint64_t ic = csti / 64;
+      uint64_t jc = csti % 64;
+      uint64_t mk = ((uint64_t)1) << jc;
+      uint64_t vl = (cstx < 0)? 0 : mk;
+      if(s->cstmask[ic] & mk){
+        if((s->cstdata[ic] ^ vl) & mk){
+          // Conflict Here!!! UNSAT!!
+          return csti;
+        }
+      }else{
+        // Mark constant
+        s->cstmask[ic] |= mk;
+        s->cstdata[ic] |= vl;
+        csts++;
+      }
+    }
+  }
+  printf("%i constants found!\n", csts);
+  return 0;
 }

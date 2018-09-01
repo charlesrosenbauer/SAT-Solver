@@ -25,6 +25,46 @@ typedef struct{
 
 
 
+// Limit to the number of parameters per clause
+static const int PARLIMIT = 16384;
+
+
+
+
+
+
+
+
+
+
+typedef struct{
+  int  numvars;
+  int* vars;
+}Clause;
+
+
+
+
+
+
+
+
+
+
+typedef struct{
+  int varnum, clausenum;
+  Clause* clauses;
+}CNF;
+
+
+
+
+
+
+
+
+
+
 void quicksort(IntPair*, int, int);   // Sorts IntPairs by x
 int cttz(uint64_t);
 uint64_t isomsb(uint64_t);

@@ -2,7 +2,7 @@
 #define __TABLE_HEADER__
 
 #include "stdint.h"
-#include "solver.h"
+#include "util.h"
 
 
 

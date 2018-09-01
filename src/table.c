@@ -147,8 +147,8 @@ int min(int a, int b){
 void printTableSubset(TABLE* t){
   int cellTop = t->cellCount;
   TABLECELL* cs = t->allCells;
-  for(int i = 1; i < min(10000, cellTop); i+=10){
-    printf("%06i %06i %#018lx %#018lx %#018lx %#018lx %p %p\n",
+  for(int i = 0; i < min(10000, cellTop); i+=10){
+    printf("%010i %010i %#018lx %#018lx %#018lx %#018lx %p %p\n",
       cs[i].x,
       cs[i].y,
       cs[i].mask[0],

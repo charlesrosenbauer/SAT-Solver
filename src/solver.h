@@ -3,46 +3,8 @@
 
 
 #include "stdint.h"
-
-
-
-
-
-
-
-
-
-// Limit to the number of parameters per clause
-static const int PARLIMIT = 16384;
-
-
-
-
-
-
-
-
-
-
-typedef struct{
-  int  numvars;
-  int* vars;
-}Clause;
-
-
-
-
-
-
-
-
-
-
-typedef struct{
-  int varnum, clausenum;
-  Clause* clauses;
-}CNF;
-
+#include "table.h"
+#include "util.h"
 
 
 
@@ -77,6 +39,18 @@ typedef struct{
   int clausect, varct, clausesz, varsz;
 }SOLVERSTATE;
 
+
+
+
+
+
+
+
+
+
+SOLVERSTATE makeSolverState(CNF*);
+void freeSolverState(SOLVERSTATE*);
+int getconstants(SOLVERSTATE*, CNF*, TABLE*);
 
 
 
