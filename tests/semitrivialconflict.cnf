@@ -1,0 +1,7 @@
+c Semitrivial conflict; constant 2 creates a conflict between
+c clauses 1 and 2.
+c
+p cnf 2 3
+-1  2 0
+ 1  2 0
+-2  0
