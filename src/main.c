@@ -55,11 +55,19 @@ int main(int argc, char** argv){
 
 
   TABLE* table = initTable(&cnf, 0);
-    t = clock() - t;
+  t = clock() - t;
 
   printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, NULL, ((float)t / CLOCKS_PER_SEC));
 
+  SOLVERSTATE s = makeSolverState(&cnf);
 
+  int x = getconstants(&s, &cnf, table);
+
+  if(x == 0){
+    printf("No trivial conflicts\n");
+  }else{
+    printf("Trivial conflict on literal #%i\n", x);
+  }
 
   return 0;
 }
