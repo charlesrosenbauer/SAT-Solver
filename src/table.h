@@ -21,6 +21,9 @@
   billion parameters probably isn't a priority, at least not for now. ;)
 */
 typedef int32_t IX;
+typedef struct{
+  IX a, b;
+}IXPAIR;
 
 
 
@@ -59,6 +62,8 @@ typedef struct{
 
   TABLECELL* allCells;
   uint64_t cellCount;
+
+  IXPAIR* varbounds;
 
   IX varct;
 }TABLE;
