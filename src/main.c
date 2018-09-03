@@ -16,20 +16,15 @@
 
 
 
-int main(int argc, char** argv){
-  FILE*  pFile;
+int mainpass(char** argv, int argi){
+  FILE* pFile;
   long   lSize;
   char*  buffer;
   size_t result;
 
-  if(argc < 2){
-    printf("No file parameter.\n");
-    return 1;
-  }
-
   clock_t t = clock();
 
-  pFile = fopen(argv[1], "rb");
+  pFile = fopen(argv[argi], "rb");
   if(pFile == NULL) {
     printf("Unable to load file.\n");
     return 2;
@@ -67,6 +62,39 @@ int main(int argc, char** argv){
     printf("No trivial conflicts\n");
   }else{
     printf("Trivial conflict on literal #%i\n", x);
+  }
+
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+int main(int argc, char** argv){
+  if(argc < 2){
+    printf("No file parameter.\n");
+    return 1;
+  }
+
+  for(int i = 1; i < argc; i++){
+    int err = mainpass(argv, i);
+
+    switch(err){
+      case  0: printf("%s successfully processed.\n", argv[i]);      break;
+      case  1: printf("%s has had an unexpected error.\n", argv[i]); break;
+      case  2: printf("%s cannot be loaded.\n", argv[i]);            break;
+      case  3: printf("%s has had a memory error.\n", argv[i]);      break;
+      case  4: printf("%s cannot be read.\n", argv[i]);              break;
+      default: printf("%s has had an unknown error?\n", argv[i]);    break;
+    }
+
+    printf("\n\n\n");
   }
 
   return 0;
