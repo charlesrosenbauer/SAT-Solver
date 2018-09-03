@@ -17,6 +17,7 @@ void freeTable(TABLE* t){
   free(t->clauseixs);
   free(t->columnixs);
   free(t->allCells);
+  free(t->varbounds);
   free(t);
 }
 
@@ -337,9 +338,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
 
   for(int i = 0; i < ret->cols; i++){
     for(int j = 0; j < 256; j++){
-      uint64_t mask[4];
-      mask[0] = 0; mask[1] = 0; mask[2] = 0; mask[3] = 0;
-      mask[(j%4)] = ((uint64_t)1) << j;
+      uint64_t mask = ((uint64_t)1) << (j%64);
 
       int ix = (256 * i) + j;
       int kstart = ret->columnixs[i];
@@ -347,7 +346,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
       int cont   = 1, k = kstart;
       while(cont && (k < kend)){
         TABLECELL* cl = &ret->allCells[k];
-        if((mask[0]&cl->mask[0]) | (mask[1]&cl->mask[1]) | (mask[2]&cl->mask[2]) | (mask[3]&cl->mask[3])){
+        if(mask&cl->mask[j/64]){
           cont = 0;
           ret->varbounds[ix].a = k;
         }
@@ -357,7 +356,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
       cont = 1, k = kend;
       while(cont && (k >= kstart)){
         TABLECELL* cl = &ret->allCells[k];
-        if(!(mask[0]&cl->mask[0]) | (mask[1]&cl->mask[1]) | (mask[2]&cl->mask[2]) | (mask[3]&cl->mask[3])){
+        if(!(mask&cl->mask[j/64])){
           cont = 0;
           ret->varbounds[ix].b = k+1;
         }
