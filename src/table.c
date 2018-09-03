@@ -341,26 +341,30 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
       uint64_t mask = ((uint64_t)1) << (j%64);
 
       int ix = (256 * i) + j;
-      int kstart = ret->columnixs[i];
-      int kend   = ((i+1)==ret->cols)? ret->cellCount : ret->columnixs[i+1];
-      int cont   = 1, k = kstart;
-      while(cont && (k < kend)){
-        TABLECELL* cl = &ret->allCells[k];
-        if(mask&cl->mask[j/64]){
-          cont = 0;
-          ret->varbounds[ix].a = k;
-        }
-        k++;
-      }
+      if(ix < ret->varct){
 
-      cont = 1, k = kend;
-      while(cont && (k >= kstart)){
-        TABLECELL* cl = &ret->allCells[k];
-        if(!(mask&cl->mask[j/64])){
-          cont = 0;
-          ret->varbounds[ix].b = k+1;
+        int kstart = ret->columnixs[i];
+        int kend   = ((i+1)==ret->cols)? ret->cellCount : ret->columnixs[i+1];
+        int cont   = 1, k = (kstart < 0)? 0 : kstart;
+
+        while(cont && (k < kend)){
+          TABLECELL* cl = &ret->allCells[k];
+          if(mask&cl->mask[j/64]){
+            cont = 0;
+            ret->varbounds[ix].a = k;
+          }
+          k++;
         }
-        k--;
+
+        cont = 1, k = kend-1;
+        while(cont && (k >= kstart)){
+          TABLECELL* cl = &ret->allCells[k];
+          if(!(mask&cl->mask[j/64])){
+            cont = 0;
+            ret->varbounds[ix].b = k+1;
+          }
+          k--;
+        }
       }
     }
   }
