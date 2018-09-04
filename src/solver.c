@@ -44,8 +44,8 @@ int* countMentions(CNF* cnf){
 SOLVERSTATE makeSolverState(CNF* cnf){
 
   SOLVERSTATE ret;
-  ret.varct   =  cnf->varnum;
-  ret.varsz   = (cnf->varnum % 64)? (cnf->varnum / 64)+1 : (cnf->varnum/64);
+  ret.varct   =  cnf->varnum + 1;
+  ret.varsz   = (ret.varct % 64)? (cnf->varnum / 64)+1 : (ret.varct/64);
   ret.clausect=  cnf->clausenum;
 
   ret.cstdata = malloc(sizeof(uint64_t) * ret.varsz);
@@ -100,7 +100,6 @@ void freeSolverState(SOLVERSTATE* s){
   free(s->fstsat);
   free(s->satclause);
   free(s->currentdata);
-  free(s);
 }
 
 
@@ -117,6 +116,7 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
   int csts = 0;
   for(int i = 0; i < c->clausenum; i++){
     if(c->clauses[i].numvars == 1){
+      s->unsatct[i] = 0;
       int cstx = c->clauses[i].vars[0];
       int csti = abs(cstx);
       uint64_t ic = csti / 64;
@@ -126,6 +126,7 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
       if(s->cstmask[ic] & mk){
         if((s->cstdata[ic] ^ vl) & mk){
           // Conflict Here!!! UNSAT!!
+          printf("0 constant propogation passes\n");
           return csti;
         }
       }else{
@@ -136,6 +137,93 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
       }
     }
   }
+
+  if(csts == 0){
+    // No constant propagation will occur with no constants.
+    printf("0 constant propogation passes\n");
+    return 0;
+  }
+
+  int cstct = 0;
+  int last  = -1;
+  int passes= 0;
+  while(cstct != last){
+    last = cstct;
+    passes++;
+    // Iterate over columns to get constants
+    for(int i = 0; i < t->cols; i++){
+      int i4 = (i * 4);
+      uint64_t cmask[4];
+      cmask[0] = s->cstmask[i4];
+      cmask[1] = ((i4 + 1) > s->varsz)? 0 : s->cstmask[i4+1];
+      cmask[2] = ((i4 + 2) > s->varsz)? 0 : s->cstmask[i4+2];
+      cmask[3] = ((i4 + 3) > s->varsz)? 0 : s->cstmask[i4+3];
+
+      uint64_t cdata[4];
+      cdata[0] = s->cstdata[i4];
+      cdata[1] = ((i4 + 1) > s->varsz)? 0 : s->cstdata[i4+1];
+      cdata[2] = ((i4 + 2) > s->varsz)? 0 : s->cstdata[i4+2];
+      cdata[3] = ((i4 + 3) > s->varsz)? 0 : s->cstdata[i4+3];
+
+      int limit = ((i+1) != t->cols)? t->columnixs[i+1] : t->cellCount;
+      for(int j = t->columnixs[i]; j < limit; j++){
+        TABLECELL* cl = &(t->allCells[j]);
+        int x = 0;
+        if((cl->mask[0]&cmask[0]) || (cl->mask[1]&cmask[1]) || (cl->mask[2]&cmask[2]) || (cl->mask[3]&cmask[3])){
+          // count number of vars that are unsatisfied
+          x  = popcount(cl->mask[0] & (cl->vals[0] ^ cdata[0]));
+          x += popcount(cl->mask[1] & (cl->vals[1] ^ cdata[1]));
+          x += popcount(cl->mask[2] & (cl->vals[2] ^ cdata[2]));
+          x += popcount(cl->mask[3] & (cl->vals[3] ^ cdata[3]));
+        }
+        int y = s->unsatct[j];
+        s->unsatct[j] -= x;
+      }
+    }
+
+    // Check for and report any conflicts of course!
+    // Repeat all of this until no unit propogation occurs any more
+    for(int i = 0; i < c->clausenum; i++){
+      // If any have 1 fewer unsat vars than total vars, unit prop!
+      if(s->unsatct[i] == 1){
+        int cont = 1;
+        TABLECELL* next = &(t->allCells[t->clauseixs[i]]);
+        while(cont && (next != NULL)){
+
+          for(int j = 0; j < 4; j++){
+            uint64_t remain = s->cstmask[(4*(next->x))+j] ^ next->mask[j];
+            if(((next->x * 4) + j) >= s->varsz) break;
+            if(remain){
+              // Remaining unsatisfied variable found! Set it as a constant!
+              cont = 0;
+              int pick = ctlz(remain);
+              int indx = (4*(next->x)) + j;
+              uint64_t mk = ((uint64_t)1) << pick;
+              uint64_t vl = next->vals[j] & mk;
+              if(s->cstmask[indx] & mk){
+                if((s->cstdata[indx] ^ vl) & mk){
+                  // Conflict Here!!! UNSAT!!
+                  printf("%i constant propogation passes\n", passes);
+                  return (indx * 64) + pick;
+                }
+              }else{
+                // Mark constant
+                s->cstmask[indx] |= mk;
+                s->cstdata[indx] |= vl;
+                cstct++;
+                csts++;
+              }
+            }
+          }
+          next = next->xnext;
+        }
+      }
+    }
+  }
+
+  printf("%i constant propogation passes\n", passes);
+
   printf("%i constants found!\n", csts);
+
   return 0;
 }
