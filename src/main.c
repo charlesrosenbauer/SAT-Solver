@@ -50,9 +50,6 @@ int mainpass(char** argv, int argi){
 
 
   TABLE* table = initTable(&cnf, 0);
-  t = clock() - t;
-
-  printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, NULL, ((float)t / CLOCKS_PER_SEC));
 
   SOLVERSTATE s = makeSolverState(&cnf);
 
@@ -63,6 +60,15 @@ int mainpass(char** argv, int argi){
   }else{
     printf("Trivial conflict on literal #%i\n", x);
   }
+
+  t = clock() - t;
+
+  printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, NULL, ((float)t / CLOCKS_PER_SEC));
+
+  //freeTable(table);   // For some reason this causes segfaults. Debug this later.
+  free(table);
+
+  freeSolverState(&s);
 
   return 0;
 }

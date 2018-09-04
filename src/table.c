@@ -18,7 +18,6 @@ void freeTable(TABLE* t){
   free(t->columnixs);
   free(t->allCells);
   free(t->varbounds);
-  free(t);
 }
 
 
@@ -324,6 +323,7 @@ TABLE* initTable(CNF* c, int64_t sizeSuggest){
         well, it's a fast way to check if we're at the end of a column with a
         lower change of a cache miss.
     */
+    ret->columnixs[0] = 0;  // Correct an issue where it skips
     if((i + 1) < cellTop){
       if(allCells[i+1].x != cell->x){
         cell->ynext = NULL;
