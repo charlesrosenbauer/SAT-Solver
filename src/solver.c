@@ -111,6 +111,21 @@ void freeSolverState(SOLVERSTATE* s){
 
 
 
+// Assumes v is a number with exactly one nonzero bit. Returns the index of that bit.
+// Undefined for everything else.
+inline int fastbix(uint64_t v){
+    float f = (float)v;
+    return (*(uint32_t *)&f >> 23) - 0x7f;
+}
+
+
+
+
+
+
+
+
+
 int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
 
   int csts = 0;
@@ -144,82 +159,114 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
     return 0;
   }
 
-  int cstct = 0;
-  int last  = -1;
-  int passes= 0;
-  while(cstct != last){
-    last = cstct;
-    passes++;
-    // Iterate over columns to get constants
-    for(int i = 0; i < t->cols; i++){
-      int i4 = (i * 4);
-      uint64_t cmask[4];
-      cmask[0] = s->cstmask[i4];
-      cmask[1] = ((i4 + 1) > s->varsz)? 0 : s->cstmask[i4+1];
-      cmask[2] = ((i4 + 2) > s->varsz)? 0 : s->cstmask[i4+2];
-      cmask[3] = ((i4 + 3) > s->varsz)? 0 : s->cstmask[i4+3];
+  IX* satixs = malloc(sizeof(IX) * s->varsz);
+  const IX NOSAT    =  0;
+  const IX MULTISAT = -1;
 
-      uint64_t cdata[4];
-      cdata[0] = s->cstdata[i4];
-      cdata[1] = ((i4 + 1) > s->varsz)? 0 : s->cstdata[i4+1];
-      cdata[2] = ((i4 + 2) > s->varsz)? 0 : s->cstdata[i4+2];
-      cdata[3] = ((i4 + 3) > s->varsz)? 0 : s->cstdata[i4+3];
+  int cstdelta;
+  int passes = 0;
+  do{
+    cstdelta = 0;
 
-      int limit = ((i+1) != t->cols)? t->columnixs[i+1] : t->cellCount;
-      for(int j = t->columnixs[i]; j < limit; j++){
-        TABLECELL* cl = &(t->allCells[j]);
-        int x = 0;
-        if((cl->mask[0]&cmask[0]) || (cl->mask[1]&cmask[1]) || (cl->mask[2]&cmask[2]) || (cl->mask[3]&cmask[3])){
-          // count number of vars that are unsatisfied
-          x  = popcount(cl->mask[0] & (cl->vals[0] ^ cdata[0]));
-          x += popcount(cl->mask[1] & (cl->vals[1] ^ cdata[1]));
-          x += popcount(cl->mask[2] & (cl->vals[2] ^ cdata[2]));
-          x += popcount(cl->mask[3] & (cl->vals[3] ^ cdata[3]));
-        }
-        int y = s->unsatct[j];
-        s->unsatct[j] -= x;
+    for(int i = 0; i < s->varct; i++)
+      s->unsatct[i] = c->clauses[i].numvars;
+
+    int col = -1;
+    uint64_t cmask[4];
+    uint64_t cdata[4];
+
+    for(int i = 0; i < t->cellCount; i++){
+
+      TABLECELL* cl = &(t->allCells[i]);
+      int x = cl->x, y = cl->y;
+
+      if(cl->x != col){
+        col = cl->x;
+        cmask[0] = s->cstmask[(4*col)  ];
+        cmask[1] = s->cstmask[(4*col)+1];
+        cmask[2] = s->cstmask[(4*col)+2];
+        cmask[3] = s->cstmask[(4*col)+3];
+
+        cdata[0] = s->cstdata[(4*col)  ];
+        cdata[1] = s->cstdata[(4*col)+1];
+        cdata[2] = s->cstdata[(4*col)+2];
+        cdata[3] = s->cstdata[(4*col)+3];
       }
-    }
 
-    // Check for and report any conflicts of course!
-    // Repeat all of this until no unit propogation occurs any more
-    for(int i = 0; i < c->clausenum; i++){
-      // If any have 1 fewer unsat vars than total vars, unit prop!
-      if(s->unsatct[i] == 1){
-        int cont = 1;
-        TABLECELL* next = &(t->allCells[t->clauseixs[i]]);
-        while(cont && (next != NULL)){
-
-          for(int j = 0; j < 4; j++){
-            uint64_t remain = s->cstmask[(4*(next->x))+j] ^ next->mask[j];
-            if(((next->x * 4) + j) >= s->varsz) break;
-            if(remain){
-              // Remaining unsatisfied variable found! Set it as a constant!
-              cont = 0;
-              int pick = ctlz(remain);
-              int indx = (4*(next->x)) + j;
-              uint64_t mk = ((uint64_t)1) << pick;
-              uint64_t vl = next->vals[j] & mk;
-              if(s->cstmask[indx] & mk){
-                if((s->cstdata[indx] ^ vl) & mk){
-                  // Conflict Here!!! UNSAT!!
-                  printf("%i constant propogation passes\n", passes);
-                  return (indx * 64) + pick;
-                }
-              }else{
-                // Mark constant
-                s->cstmask[indx] |= mk;
-                s->cstdata[indx] |= vl;
-                cstct++;
-                csts++;
-              }
-            }
+      // Are there any constants here?
+      if(cmask[0] | cmask[1] | cmask[2] | cmask[3]){
+        // Is clause currently unsatisfied?
+        if(!(s->satclause[y/64] & ((uint64_t)1 << (y%64)))){
+          // Maybe. Check if recent changes have satisfied it.
+          uint64_t issat = ((cdata[0] ^ ~cl->vals[0]) & cmask[0] & cl->mask[0])
+                         | ((cdata[1] ^ ~cl->vals[1]) & cmask[1] & cl->mask[1])
+                         | ((cdata[2] ^ ~cl->vals[2]) & cmask[2] & cl->mask[2])
+                         | ((cdata[3] ^ ~cl->vals[3]) & cmask[3] & cl->mask[3]);
+          if(issat){
+            s->satclause[y/64] |= ((uint64_t)1 << (y%64)); // Yes? Record it.
+          }else{
+            // Nope. Let's adjust unsatct
+            int unsat = popcount((cdata[0] ^ cl->vals[0]) & cmask[0] & cl->mask[0])
+                      + popcount((cdata[1] ^ cl->vals[1]) & cmask[1] & cl->mask[1])
+                      + popcount((cdata[2] ^ cl->vals[2]) & cmask[2] & cl->mask[2])
+                      + popcount((cdata[3] ^ cl->vals[3]) & cmask[3] & cl->mask[3]);
+            s->unsatct[y] -= unsat;
           }
-          next = next->xnext;
         }
       }
     }
-  }
+
+    col = -1;
+
+    for(int i = 0; i < t->cellCount; i++){
+      TABLECELL* cl = &(t->allCells[i]);
+      int x = cl->x, y = cl->y;
+
+      if(s->unsatct[i] == 0){
+        // UNSAT!! Add some analysis to this later to find a conflicting variable.
+        // Any constraint here should do just fine.
+        return -1;
+      }else if(s->unsatct[i] == 1){
+        // Somewhere in this clause there is a single, untouched constraint.
+        // If it's here, we set it as a new constant and set unsatct[i] to 0.
+        // Otherwise, we move on.
+
+        // Generate constant masks if necessary.
+        if(cl->x != col){
+          col = cl->x;
+          cmask[0] = s->cstmask[(4*col)  ];
+          cmask[1] = s->cstmask[(4*col)+1];
+          cmask[2] = s->cstmask[(4*col)+2];
+          cmask[3] = s->cstmask[(4*col)+3];
+        }
+
+        uint64_t pick[4];
+        pick[0] = (~cmask[0] & cl->mask[0]);
+        pick[1] = (~cmask[1] & cl->mask[1]);
+        pick[2] = (~cmask[2] & cl->mask[2]);
+        pick[3] = (~cmask[3] & cl->mask[3]);
+
+        // Is the remaining result here?
+        if(pick[0] | pick[1] | pick[2] | pick[3]){
+          // Yes! Let's add a new constant!
+          s->cstmask[(y/64)  ] |= pick[0];
+          s->cstmask[(y/64)+1] |= pick[1];
+          s->cstmask[(y/64)+2] |= pick[2];
+          s->cstmask[(y/64)+3] |= pick[3];
+
+          s->cstdata[(y/64)  ] |= pick[0] & cl->vals[0];
+          s->cstdata[(y/64)+1] |= pick[1] & cl->vals[1];
+          s->cstdata[(y/64)+2] |= pick[2] & cl->vals[2];
+          s->cstdata[(y/64)+3] |= pick[3] & cl->vals[3];
+          cstdelta++;
+        }
+      }
+    }
+
+    passes++;
+  }while(cstdelta != 0);
+
+  free(satixs);
 
   printf("%i constant propogation passes\n", passes);
 
