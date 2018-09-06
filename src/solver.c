@@ -142,6 +142,7 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
         if((s->cstdata[ic] ^ vl) & mk){
           // Conflict Here!!! UNSAT!!
           printf("0 constant propogation passes\n");
+          printf("%i constants found\n", csts);
           return csti;
         }
       }else{
@@ -156,6 +157,7 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
   if(csts == 0){
     // No constant propagation will occur with no constants.
     printf("0 constant propogation passes\n");
+    printf("%i constants found\n", csts);
     return 0;
   }
 
@@ -223,9 +225,15 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
       int x = cl->x, y = cl->y;
 
       if(s->unsatct[i] == 0){
-        // UNSAT!! Add some analysis to this later to find a conflicting variable.
-        // Any constraint here should do just fine.
-        return -1;
+        // UNSAT!! Find a constraint to claim is conflicting.
+        printf("0 constant propogation passes\n");
+        printf("%i constants found\n", csts);
+        int var = 0;
+        for(int i = 0; i < 256; i++){
+          if((cl->mask[i/64] >> (i%64)) & 1){
+            return i + (256 * x);
+          }
+        }
       }else if(s->unsatct[i] == 1){
         // Somewhere in this clause there is a single, untouched constraint.
         // If it's here, we set it as a new constant and set unsatct[i] to 0.
@@ -264,6 +272,7 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
     }
 
     passes++;
+    csts += cstdelta;
   }while(cstdelta != 0);
 
   free(satixs);
