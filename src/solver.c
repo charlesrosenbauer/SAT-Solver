@@ -283,3 +283,48 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
 
   return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
+  /*
+    This is where the real performance comes from. A fast, highly parallelizable
+    algorithm for approximating SAT. Results are used for predictions. If an
+    actual satisfying state is found, return 1. Otherwise, return 0 and move
+    onto the full solver.
+  */
+}
+
+
+
+
+
+
+
+
+
+int fullSolver(SOLVERSTATE* s, CNF* c, TABLE* t){
+
+
+  int varix = 1;
+  int lowerfail = 0; // If we have to backtrack before here, we know it's unsat.
+  while(varix <= c->varnum){
+
+    /*
+      Basically, a depth-first search on the space, with backtracking on
+      conflicts and unit prop. Maybe some CDCL too, we'll see.
+    */
+
+  }
+
+  return 0;
+}
