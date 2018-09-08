@@ -229,6 +229,7 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
         printf("0 constant propogation passes\n");
         printf("%i constants found\n", csts);
         int var = 0;
+        free(satixs);
         for(int i = 0; i < 256; i++){
           if((cl->mask[i/64] >> (i%64)) & 1){
             return i + (256 * x);
