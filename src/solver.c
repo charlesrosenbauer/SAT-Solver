@@ -303,6 +303,38 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
     actual satisfying state is found, return 1. Otherwise, return 0 and move
     onto the full solver.
   */
+  int cont = 1;
+  while(cont){
+
+    for(int i = 0; i < s->varct; i++){
+      uint64_t mask = (uint64_t)1 << (i%64);
+      int varix     = i/64;
+      int colix     = i/256;
+      int wordix    = (i/64)%4;
+      if(!(s->cstmask[varix] & mask)){  // Is this value non-constant?
+        int start = t->columnixs[i];
+        int end   = ((i+1) >= t->cols)? t->cellCount : t->columnixs[i+1];
+
+        int tct = 0, fct = 0;   // How many clauses are satisfied if var is true, false?
+        for(int i = start; i < end; i++){   // Adjust this; it can be done a bit smarter w/ varbounds.
+
+          uint64_t tval = t->allCells[i].vals[wordix] & t->allCells[i].mask[wordix] & mask;
+          tval = tval? 1 : 0;
+          uint64_t fval = 1 - tval;
+
+          tct += tval;
+          fct += fval;
+        }
+        if(tct > fct){
+          s->prddata[varix] |=  mask;
+        }else{
+          s->prddata[varix] &= ~mask;
+        }
+      }
+    }
+  }
+
+  return 0;
 }
 
 
