@@ -303,6 +303,40 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
     actual satisfying state is found, return 1. Otherwise, return 0 and move
     onto the full solver.
   */
+  {
+    const int SAT0 =  0;
+    const int SAT2 = -1;
+
+    for(int i = 0; i < s->clausect; i++){
+      s->fstsat[i] = SAT0;
+    }
+
+    int col = -1;
+    uint64_t data[4];
+    for(int i = 0; i < t->cellCount; i++){
+      if(t->allCells[i].x != col){
+        col = t->allCells[i].x;
+        data[0] = (((col*4)  ) > s->varsz)? s->cstdata[(col * 4)  ] : 0;
+        data[1] = (((col*4)+1) > s->varsz)? s->cstdata[(col * 4)+1] : 0;
+        data[2] = (((col*4)+2) > s->varsz)? s->cstdata[(col * 4)+2] : 0;
+        data[3] = (((col*4)+3) > s->varsz)? s->cstdata[(col * 4)+3] : 0;
+      }
+
+      uint64_t pass = 0;
+      for(int j = 0; j < 4; j++)
+        pass |= (t->allCells[i].vals[j] ^ data[j]) & t->allCells[i].mask[j];
+
+      if(pass){
+        int clauseix = t->allCells[i].y;
+        if(s->fstsat[clauseix] == SAT0){
+          s->fstsat[clauseix] = col;
+        }else if(s->fstsat[clauseix] > SAT0){
+          s->fstsat[clauseix] = SAT2;
+        }
+      }
+    }
+  }
+
   int cont = 1;
   while(cont){
 
@@ -322,6 +356,8 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
           tval = tval? 1 : 0;
           uint64_t fval = 1 - tval;
 
+
+
           tct += tval;
           fct += fval;
         }
@@ -331,6 +367,12 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
           s->prddata[varix] &= ~mask;
         }
       }
+    }
+
+    int col = 0;
+    for(int i = 0; i < s->varct; i++){
+      //s->prddata[i] |= (cstdata[i] & cstmask[i]);
+
     }
   }
 
