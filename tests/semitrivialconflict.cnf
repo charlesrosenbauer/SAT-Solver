@@ -1,6 +1,8 @@
 c Semitrivial conflict; constant 2 creates a conflict between
 c clauses 1 and 2.
 c
+c Constant propagation should prove this unsatisfiable after 1 pass.
+c
 p cnf 2 3
 -1  2 0
  1  2 0
