@@ -303,13 +303,16 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
     actual satisfying state is found, return 1. Otherwise, return 0 and move
     onto the full solver.
   */
-  {
-    const int SAT0 =  0;
-    const int SAT2 = -1;
 
-    for(int i = 0; i < s->clausect; i++){
-      s->fstsat[i] = SAT0;
-    }
+  const int SAT0 =  0;
+  const int SAT2 = -1;
+
+  for(int i = 0; i < s->clausect; i++){
+    s->fstsat[i] = SAT0;
+  }
+
+  int cont = 1;
+  while(cont){
 
     int col = -1;
     uint64_t data[4];
@@ -325,7 +328,6 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
       uint64_t pass = 0;
       for(int j = 0; j < 4; j++)
         pass |= (t->allCells[i].vals[j] ^ data[j]) & t->allCells[i].mask[j];
-
       if(pass){
         int clauseix = t->allCells[i].y;
         if(s->fstsat[clauseix] == SAT0){
@@ -335,10 +337,6 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
         }
       }
     }
-  }
-
-  int cont = 1;
-  while(cont){
 
     for(int i = 0; i < s->varct; i++){
       uint64_t mask = (uint64_t)1 << (i%64);
@@ -367,12 +365,6 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
           s->prddata[varix] &= ~mask;
         }
       }
-    }
-
-    int col = 0;
-    for(int i = 0; i < s->varct; i++){
-      //s->prddata[i] |= (cstdata[i] & cstmask[i]);
-
     }
   }
 
