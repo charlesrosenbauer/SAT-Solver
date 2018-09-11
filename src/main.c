@@ -61,14 +61,36 @@ int mainpass(char** argv, int argi){
     printf("Trivial conflict on literal #%i\n", x);
   }
 
+  if(!x){
+    x = approximator(&s, &cnf, table);
+
+    if(x){
+      printf("Approximation found a valid solution.\n");
+    }else{
+      printf("Approximation failed to find a valid solution. Continuing to full search.\n");
+    }
+  }
+
+  /*
+  for(int i = 1; i <= cnf.varnum; i++){
+    uint64_t mask = (uint64_t)1 << (i%64);
+    if(s.cstmask[i/64] & mask){
+      if(s.cstdata[i/64] & mask){
+        printf("C: %i = 1\n", i);
+      }else{
+        printf("C: %i = 0\n", i);
+      }
+    }
+  }*/
+
   t = clock() - t;
 
   printf("%i %i %p, %f seconds\n\n", cnf.varnum, cnf.clausenum, NULL, ((float)t / CLOCKS_PER_SEC));
 
   //freeTable(table);   // For some reason this causes segfaults. Debug this later.
-  free(table);
+  //free(table);
 
-  freeSolverState(&s);
+  //freeSolverState(&s);
 
   return 0;
 }
