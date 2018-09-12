@@ -41,6 +41,47 @@ int* countMentions(CNF* cnf){
 
 
 
+inline uint64_t ixbit(int x){
+  uint64_t ret = 1;
+  return (1 << (x % 64));
+}
+
+
+
+
+
+
+
+
+
+
+inline uint64_t ixmask(int x, uint64_t* data){
+  uint64_t ret = data[x/64];
+  return ret & ixbit(x);
+}
+
+
+
+
+
+
+
+
+
+
+inline uint64_t ixdmask(int x, uint64_t delta, uint64_t* data){
+  uint64_t ret = data[x/64];
+  return ret & (ixbit(x) ^ delta);
+}
+
+
+
+
+
+
+
+
+
 SOLVERSTATE makeSolverState(CNF* cnf){
 
   SOLVERSTATE ret;
@@ -129,6 +170,11 @@ inline int fastbix(uint64_t v){
 int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
 
   int csts = 0;
+  for(int i = 0; i < s->varsz; i++){
+    s->cstdata[i] = 0;
+    s->cstmask[i] = 0;
+  }
+
   for(int i = 0; i < c->clausenum; i++){
     if(c->clauses[i].numvars == 1){
       s->unsatct[i] = 0;
@@ -136,10 +182,10 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
       int csti = abs(cstx);
       uint64_t ic = csti / 64;
       uint64_t jc = csti % 64;
-      uint64_t mk = ((uint64_t)1) << jc;
+      uint64_t mk = ixbit(jc);
       uint64_t vl = (cstx < 0)? 0 : mk;
-      if(s->cstmask[ic] & mk){
-        if((s->cstdata[ic] ^ vl) & mk){
+      if(ixmask(ic, s->cstmask)){
+        if(ixdmask(ic, vl, s->cstdata)){
           // Conflict Here!!! UNSAT!!
           printf("0 constant propogation passes\n");
           printf("%i constants found\n", csts);
@@ -198,14 +244,14 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
       // Are there any constants here?
       if(cmask[0] | cmask[1] | cmask[2] | cmask[3]){
         // Is clause currently unsatisfied?
-        if(!(s->satclause[y/64] & ((uint64_t)1 << (y%64)))){
+        if(!(ixmask(y, s->satclause))){
           // Maybe. Check if recent changes have satisfied it.
           uint64_t issat = ((cdata[0] ^ ~cl->vals[0]) & cmask[0] & cl->mask[0])
                          | ((cdata[1] ^ ~cl->vals[1]) & cmask[1] & cl->mask[1])
                          | ((cdata[2] ^ ~cl->vals[2]) & cmask[2] & cl->mask[2])
                          | ((cdata[3] ^ ~cl->vals[3]) & cmask[3] & cl->mask[3]);
           if(issat){
-            s->satclause[y/64] |= ((uint64_t)1 << (y%64)); // Yes? Record it.
+            s->satclause[y/64] |= ixbit(y); // Yes? Record it.
           }else{
             // Nope. Let's adjust unsatct
             int unsat = popcount((cdata[0] ^ cl->vals[0]) & cmask[0] & cl->mask[0])
@@ -355,11 +401,11 @@ int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
     }
 
     for(int i = 0; i < s->varct; i++){
-      uint64_t mask = (uint64_t)1 << (i%64);
+      uint64_t mask = ixbit(i);
       int varix     = i/64;
       int colix     = i/256;
       int wordix    = (i/64)%4;
-      if(!(s->cstmask[varix] & mask)){  // Is this value non-constant?
+      if(!ixmask(i, s->cstmask)){  // Is this value non-constant?
         int start = t->varbounds[i].a;
         int end   = t->varbounds[i].b;
 
