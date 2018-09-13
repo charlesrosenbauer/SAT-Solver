@@ -43,7 +43,7 @@ int* countMentions(CNF* cnf){
 
 inline uint64_t ixbit(int x){
   uint64_t ret = 1;
-  return (1 << (x % 64));
+  return (ret << (x % 64));
 }
 
 
@@ -69,10 +69,58 @@ inline uint64_t ixmask(int x, uint64_t* data){
 
 
 
+inline uint64_t ixcmp(int x, uint64_t v, uint64_t* data){
+  uint64_t ret = data[x/64];
+  uint64_t val = v << (x%64);
+  return ret & ixbit(x) & val;
+}
+
+
+
+
+
+
+
+
+
+
 inline uint64_t ixdmask(int x, uint64_t delta, uint64_t* data){
   uint64_t ret = data[x/64];
   return ret & (ixbit(x) ^ delta);
 }
+
+
+
+
+
+
+
+
+
+
+inline void ixset(int x, int v, uint64_t* data){
+  uint64_t m0 =  (uint64_t)1 << (x%64);
+  uint64_t m1 = ((uint64_t)v << (x%64)) & m0;
+
+  data[x/64]  = (data[x/64] & (~m0)) | m1;
+}
+
+
+
+
+
+
+
+
+
+
+inline void dump4(int ix, uint64_t* from, uint64_t* to){
+  to[0] = from[ix  ];
+  to[1] = from[ix+1];
+  to[2] = from[ix+2];
+  to[3] = from[ix+3];
+}
+
 
 
 
@@ -176,16 +224,19 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
   }
 
   for(int i = 0; i < c->clausenum; i++){
+
+    // Does this clause have only a single variable?
     if(c->clauses[i].numvars == 1){
+      // Yes it does. Let's try to make it a constant.
       s->unsatct[i] = 0;
       int cstx = c->clauses[i].vars[0];
       int csti = abs(cstx);
-      uint64_t ic = csti / 64;
-      uint64_t jc = csti % 64;
-      uint64_t mk = ixbit(jc);
+      uint64_t mk = ixbit(csti);
       uint64_t vl = (cstx < 0)? 0 : mk;
-      if(ixmask(ic, s->cstmask)){
-        if(ixdmask(ic, vl, s->cstdata)){
+
+      // Is there already a conflicting constant here?
+      if(ixmask(csti, s->cstmask)){
+        if(ixmask(csti, s->cstdata) ^ vl){
           // Conflict Here!!! UNSAT!!
           printf("0 constant propogation passes\n");
           printf("%i constants found\n", csts);
@@ -193,8 +244,8 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
         }
       }else{
         // Mark constant
-        s->cstmask[ic] |= mk;
-        s->cstdata[ic] |= vl;
+        s->cstmask[csti/64] |= mk;
+        s->cstdata[csti/64] |= vl;
         csts++;
       }
     }
@@ -207,122 +258,88 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
     return 0;
   }
 
-  IX* satixs = malloc(sizeof(IX) * s->varsz);
-  const IX NOSAT    =  0;
-  const IX MULTISAT = -1;
 
-  int cstdelta;
+
+
+  // Let's try constant propagation
+
+  IX* unsatcts = malloc(sizeof(IX) * s->clausect);
+  for(int i = 0; i < c->clausenum; i++){
+    // unsatcts will store how many unsatisfied variables are in each clause.
+    // Set it to -1 if the corresponding clause is satisfied.
+    unsatcts[i] = c->clauses[i].numvars;
+  }
+
   int passes = 0;
+  int oldcsts = csts;
   do{
-    cstdelta = 0;
-
-    for(int i = 0; i < s->varct; i++)
-      s->unsatct[i] = c->clauses[i].numvars;
-
     int col = -1;
-    uint64_t cmask[4];
-    uint64_t cdata[4];
-
+    uint64_t cnsts[4], cnstm[4];
     for(int i = 0; i < t->cellCount; i++){
-
-      TABLECELL* cl = &(t->allCells[i]);
-      int x = cl->x, y = cl->y;
-
-      if(cl->x != col){
-        col = cl->x;
-        cmask[0] = s->cstmask[(4*col)  ];
-        cmask[1] = s->cstmask[(4*col)+1];
-        cmask[2] = s->cstmask[(4*col)+2];
-        cmask[3] = s->cstmask[(4*col)+3];
-
-        cdata[0] = s->cstdata[(4*col)  ];
-        cdata[1] = s->cstdata[(4*col)+1];
-        cdata[2] = s->cstdata[(4*col)+2];
-        cdata[3] = s->cstdata[(4*col)+3];
+      TABLECELL* cell = &t->allCells[i];
+      if(cell->x != col){
+        col = cell->x;
+        dump4(col, s->cstdata, cnsts);
+        dump4(col, s->cstmask, cnstm);
       }
+      // Any satisfied clauses? If so, mark them as -1.
+      // Else, subtract the number of unsat vars.
+      int y = cell->y;
+      if(unsatcts[y] != -1){
+        uint64_t diff[4];
+        for(int j = 0; j < 4; j++)
+          diff[j] = (cnsts[j] ^ cell->vals[j]) & (cnstm[j] & cell->mask[j]);
 
-      // Are there any constants here?
-      if(cmask[0] | cmask[1] | cmask[2] | cmask[3]){
-        // Is clause currently unsatisfied?
-        if(!(ixmask(y, s->satclause))){
-          // Maybe. Check if recent changes have satisfied it.
-          uint64_t issat = ((cdata[0] ^ ~cl->vals[0]) & cmask[0] & cl->mask[0])
-                         | ((cdata[1] ^ ~cl->vals[1]) & cmask[1] & cl->mask[1])
-                         | ((cdata[2] ^ ~cl->vals[2]) & cmask[2] & cl->mask[2])
-                         | ((cdata[3] ^ ~cl->vals[3]) & cmask[3] & cl->mask[3]);
-          if(issat){
-            s->satclause[y/64] |= ixbit(y); // Yes? Record it.
-          }else{
-            // Nope. Let's adjust unsatct
-            int unsat = popcount((cdata[0] ^ cl->vals[0]) & cmask[0] & cl->mask[0])
-                      + popcount((cdata[1] ^ cl->vals[1]) & cmask[1] & cl->mask[1])
-                      + popcount((cdata[2] ^ cl->vals[2]) & cmask[2] & cl->mask[2])
-                      + popcount((cdata[3] ^ cl->vals[3]) & cmask[3] & cl->mask[3]);
-            s->unsatct[y] -= unsat;
-          }
+        if(diff[0] | diff[1] | diff[2] | diff[3]){
+          // Satisfied
+          unsatcts[y] = -1;
+        }else{
+          unsatcts[y] -= (
+              popcount(diff[0]) |
+              popcount(diff[1]) |
+              popcount(diff[2]) |
+              popcount(diff[3]) );
         }
       }
     }
 
-    col = -1;
-
-    for(int i = 0; i < t->cellCount; i++){
-      TABLECELL* cl = &(t->allCells[i]);
-      int x = cl->x, y = cl->y;
-
-      if(s->unsatct[i] == 0){
-        // UNSAT!! Find a constraint to claim is conflicting.
-        printf("0 constant propogation passes\n");
-        printf("%i constants found\n", csts);
-        int var = 0;
-        free(satixs);
-        for(int i = 0; i < 256; i++){
-          if((cl->mask[i/64] >> (i%64)) & 1){
-            return i + (256 * x);
+    for(int i = 0; i < c->clausenum; i++){
+      if(unsatcts[i] == 1){
+        // Find and set the unsatisfied variable.
+        for(int j = 0; j < c->clauses[i].numvars; j++){
+          if(!ixmask(abs(c->clauses[i].vars[j]), s->cstmask)){
+            int32_t n = c->clauses[i].vars[j];
+            int32_t b = (n > 0)? 1 : 0;
+            // Is the variable already set to a conflicting value?
+            if(ixmask(abs(n), s->cstmask) && (ixcmp(abs(n), b, s->cstdata))){
+              // Yes it is!! CONFLICT!!
+              printf("Conflict found after %i constant propogation passes\n", passes);
+              free(unsatcts);
+              return abs(n);
+            }else{
+              ixset(abs(n), 1, s->cstmask);
+              ixset(abs(n), b, s->cstdata);
+              csts++;
+            }
           }
         }
-      }else if(s->unsatct[i] == 1){
-        // Somewhere in this clause there is a single, untouched constraint.
-        // If it's here, we set it as a new constant and set unsatct[i] to 0.
-        // Otherwise, we move on.
 
-        // Generate constant masks if necessary.
-        if(cl->x != col){
-          col = cl->x;
-          cmask[0] = s->cstmask[(4*col)  ];
-          cmask[1] = s->cstmask[(4*col)+1];
-          cmask[2] = s->cstmask[(4*col)+2];
-          cmask[3] = s->cstmask[(4*col)+3];
-        }
+      }else if(unsatcts[i] == 0){
+        // CONFLICT!
+        printf("Conflict found after %i constant propogation passes\n", passes);
+        free(unsatcts);
+        return c->clauses[i].vars[0];
 
-        uint64_t pick[4];
-        pick[0] = (~cmask[0] & cl->mask[0]);
-        pick[1] = (~cmask[1] & cl->mask[1]);
-        pick[2] = (~cmask[2] & cl->mask[2]);
-        pick[3] = (~cmask[3] & cl->mask[3]);
-
-        // Is the remaining result here?
-        if(pick[0] | pick[1] | pick[2] | pick[3]){
-          // Yes! Let's add a new constant!
-          s->cstmask[(y/64)  ] |= pick[0];
-          s->cstmask[(y/64)+1] |= pick[1];
-          s->cstmask[(y/64)+2] |= pick[2];
-          s->cstmask[(y/64)+3] |= pick[3];
-
-          s->cstdata[(y/64)  ] |= pick[0] & cl->vals[0];
-          s->cstdata[(y/64)+1] |= pick[1] & cl->vals[1];
-          s->cstdata[(y/64)+2] |= pick[2] & cl->vals[2];
-          s->cstdata[(y/64)+3] |= pick[3] & cl->vals[3];
-          cstdelta++;
-        }
+      }else if(unsatcts[i] != -1){
+        // Reset things.
+        unsatcts[i] = c->clauses[i].numvars;
       }
     }
 
     passes++;
-    csts += cstdelta;
-  }while(cstdelta != 0);
+  }while(oldcsts != csts);
 
-  free(satixs);
+  free(unsatcts);
 
   printf("%i constant propogation passes\n", passes);
 
