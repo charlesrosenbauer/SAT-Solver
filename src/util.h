@@ -12,6 +12,16 @@
 
 
 
+static uint64_t rseed[2];
+
+
+
+
+
+
+
+
+
 typedef struct{
   int val, x;
 }IntPair;
@@ -70,6 +80,8 @@ int cttz(uint64_t);
 uint64_t isomsb(uint64_t);
 int ctlz(uint64_t);
 int popcount(uint64_t);
+uint64_t rng64();
+void rngseed(uint64_t, uint64_t);
 
 
 

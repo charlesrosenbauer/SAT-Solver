@@ -117,3 +117,33 @@ inline int popcount(uint64_t x){
   x = (x + (x >> 4)) & m2;
   return (x * m3) >> 56;
 }
+
+
+
+
+
+
+
+
+
+
+uint64_t rng64(){
+  rseed[0] = (rseed[0] * 135713786917) + 1519657161;
+  rseed[1] = (rseed[1] * 513761798575) + 3671967169;
+  rseed[0] =  rseed[0] ^  rseed[1] - 1;
+  return rseed[0];
+}
+
+
+
+
+
+
+
+
+
+
+void rngseed(uint64_t a, uint64_t b){
+  rseed[0] = a;
+  rseed[1] = b;
+}
