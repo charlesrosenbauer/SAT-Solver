@@ -277,7 +277,13 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
   int oldcsts;
   int unsatclauses = s->clausect;
   int checkpass = 0;
+  int checkpasses = 0;
   do{
+    if(checkpass){
+      checkpasses++;
+    }else{
+      checkpasses = 0;
+    }
     int col = -1;
     oldcsts = csts;
     checkpass = 0;
@@ -370,13 +376,13 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
     }
 
     passes++;
-  }while(checkpass || ((unsatclauses != 0) && (oldcsts != csts)));
+  }while((checkpass && (checkpasses < 3)) || ((unsatclauses != 0) && (oldcsts != csts)));
 
   free(unsatcts);
 
   printf("%i constant propogation passes\n", passes);
 
-  printf("%i constants found!\n", csts);
+  printf("%i constants found!\n", oldcsts);
 
   return unsatclauses? 0 : -1;
 }
@@ -392,125 +398,11 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
 
 
 
-int approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
+void approximator(SOLVERSTATE* s, CNF* c, TABLE* t){
   /*
     This is where the real performance comes from. A fast, highly parallelizable
-    algorithm for approximating SAT. Results are used for predictions. If an
-    actual satisfying state is found, return 1. Otherwise, return 0 and move
-    onto the full solver.
+    algorithm for approximating SAT. Results are used for predictions.
   */
-
-  const int SAT0 =  0;
-  const int SAT2 = -1;
-
-  for(int i = 0; i < s->clausect; i++){
-    s->fstsat[i] = SAT0;
-  }
-
-  int satct = 0;
-  int prevsatct = 0;
-  int cont = 50;
-  int passct = 0;
-  while(cont){
-
-    prevsatct = satct;
-    satct = 0;
-
-    int col = -1;
-    uint64_t data[4];
-    for(int i = 0; i < t->cellCount; i++){
-      if(t->allCells[i].x != col){
-        col = t->allCells[i].x;
-        data[0] = (((col*4)  ) > s->varsz)? s->cstdata[(col * 4)  ] : 0;
-        data[1] = (((col*4)+1) > s->varsz)? s->cstdata[(col * 4)+1] : 0;
-        data[2] = (((col*4)+2) > s->varsz)? s->cstdata[(col * 4)+2] : 0;
-        data[3] = (((col*4)+3) > s->varsz)? s->cstdata[(col * 4)+3] : 0;
-      }
-
-      uint64_t pass = 0;
-      for(int j = 0; j < 4; j++)
-        pass |= (t->allCells[i].vals[j] ^ data[j]) & t->allCells[i].mask[j];
-
-      if(pass){
-        int clauseix = t->allCells[i].y;
-        if(s->fstsat[clauseix] == SAT0){
-          s->fstsat[clauseix] = col;
-        }else if(s->fstsat[clauseix] > SAT0){
-          s->fstsat[clauseix] = SAT2;
-        }
-      }
-    }
-
-    for(int i = 0; i < s->clausect; i++){
-      satct += (s->fstsat[i] != SAT0)? 1 : 0;
-    }
-
-    if(satct == s->clausect){
-      cont = 0;
-      break;
-    }
-
-    for(int i = 0; i < s->varct; i++){
-      uint64_t mask = ixbit(i);
-      int varix     = i/64;
-      int colix     = i/256;
-      int wordix    = (i/64)%4;
-      if(!ixmask(i, s->cstmask)){  // Is this value non-constant?
-        int start = t->varbounds[i].a;
-        int end   = t->varbounds[i].b;
-
-        int tct = 0, fct = 0;   // How many clauses are satisfied if var is true, false?
-        for(int j = start; j < end; j++){
-
-          // Is there actually any overlap here, or can we just skip this cell?
-          if(t->allCells[j].mask[wordix] & mask){
-            uint64_t tval = t->allCells[j].vals[wordix] & t->allCells[j].mask[wordix] & mask;
-            tval = tval? 1 : 0;
-            uint64_t fval = !tval;
-
-            /*
-              Is the clause satisfied in multiple places? If so, changing it
-              here will do nothing.
-            */
-            if(s->fstsat[colix] == SAT2){
-              tval = 0;
-              fval = 0;
-            }else if(s->fstsat[colix] != colix){
-              tval = 0;
-              fval = 0;
-            }else{
-              tval *= 2;
-              fval *= 2;
-            }
-
-            tct += tval;
-            fct += fval;
-          }
-        }
-        if(tct > fct){
-          s->prddata[varix] |=  mask;
-        }else if(tct != fct){
-          s->prddata[varix] &= ~mask;
-        }else{
-          s->prddata[varix] ^=  mask;
-        }
-      }
-    }
-    if(satct == prevsatct){
-      cont = 1;
-    }else if((satct - prevsatct) < -10){
-      cont -= 2;
-    }else if(abs(satct - prevsatct) < 10){
-      cont--;
-    }
-
-    passct++;
-    if(passct > 1000) cont = 0;
-  }
-
-  printf("%i out of %i clauses satisfied after %i passes.\n", satct, s->clausect, passct);
-
-  return (satct == s->clausect);
 }
 
 

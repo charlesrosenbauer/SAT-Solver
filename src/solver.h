@@ -51,7 +51,7 @@ typedef struct{
 SOLVERSTATE makeSolverState(CNF*);
 void freeSolverState(SOLVERSTATE*);
 int getconstants(SOLVERSTATE*, CNF*, TABLE*);
-int approximator(SOLVERSTATE*, CNF*, TABLE*);
+void approximator(SOLVERSTATE*, CNF*, TABLE*);
 
 
 
