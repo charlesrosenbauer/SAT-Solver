@@ -57,10 +57,13 @@ int mainpass(char** argv, int argi){
 
   if(x == 0){
     printf("No trivial conflicts\n");
-  }else{
+  }else if(x != -1){
     printf("Trivial conflict on literal #%i\n", x);
+  }else{
+    printf("Problem solved by constant propagation.\n");
+    return 0;
   }
-
+/*
   if(!x){
     x = approximator(&s, &cnf, table);
 
@@ -68,18 +71,6 @@ int mainpass(char** argv, int argi){
       printf("Approximation found a valid solution.\n");
     }else{
       printf("Approximation failed to find a valid solution. Continuing to full search.\n");
-    }
-  }
-
-  /*
-  for(int i = 1; i <= cnf.varnum; i++){
-    uint64_t mask = (uint64_t)1 << (i%64);
-    if(s.cstmask[i/64] & mask){
-      if(s.cstdata[i/64] & mask){
-        printf("C: %i = 1\n", i);
-      }else{
-        printf("C: %i = 0\n", i);
-      }
     }
   }*/
 

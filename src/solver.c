@@ -215,6 +215,9 @@ inline int fastbix(uint64_t v){
 
 
 
+// Returns -1 if all clauses are satisfied
+// Returns  0 if there are clauses left
+// Returns  N if there is a conflict on N.
 int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
 
   int csts = 0;
@@ -271,9 +274,13 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
   }
 
   int passes = 0;
-  int oldcsts = csts;
+  int oldcsts;
+  int unsatclauses = s->clausect;
+  int checkpass = 0;
   do{
     int col = -1;
+    oldcsts = csts;
+    checkpass = 0;
     uint64_t cnsts[4], cnstm[4];
     for(int i = 0; i < t->cellCount; i++){
       TABLECELL* cell = &t->allCells[i];
@@ -288,56 +295,82 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
       if(unsatcts[y] != -1){
         uint64_t diff[4];
         for(int j = 0; j < 4; j++)
-          diff[j] = (cnsts[j] ^ cell->vals[j]) & (cnstm[j] & cell->mask[j]);
+          diff[j] = (cnsts[j] ^ ~cell->vals[j]) & (cnstm[j] & cell->mask[j]);
 
         if(diff[0] | diff[1] | diff[2] | diff[3]){
           // Satisfied
           unsatcts[y] = -1;
+          unsatclauses--;
         }else{
-          unsatcts[y] -= (
-              popcount(diff[0]) |
-              popcount(diff[1]) |
-              popcount(diff[2]) |
-              popcount(diff[3]) );
+          int xval = (
+              popcount(cnstm[0] & cell->mask[0]) +
+              popcount(cnstm[1] & cell->mask[1]) +
+              popcount(cnstm[2] & cell->mask[2]) +
+              popcount(cnstm[3] & cell->mask[3]) );
+          unsatcts[y] -= xval;
         }
       }
     }
 
+    // Iterate over clauses, check if constant propagation is possible.
+    // Otherwise, just reset any unsatct values for unsatisfied clauses.
     for(int i = 0; i < c->clausenum; i++){
+
+
       if(unsatcts[i] == 1){
+
+        /*
+          Okay, this gets complicated. If multiple clauses all try to do
+          constant propagation on the same variable during the same pass, we run
+          into issues here. If this happens, we run an extra "check pass", and
+          set this particular
+        */
+
         // Find and set the unsatisfied variable.
+        int constspropagated = 0;
         for(int j = 0; j < c->clauses[i].numvars; j++){
+          // Is this var unsatisfied?
           if(!ixmask(abs(c->clauses[i].vars[j]), s->cstmask)){
             int32_t n = c->clauses[i].vars[j];
             int32_t b = (n > 0)? 1 : 0;
             // Is the variable already set to a conflicting value?
-            if(ixmask(abs(n), s->cstmask) && (ixcmp(abs(n), b, s->cstdata))){
+            if(ixmask(abs(n), s->cstmask) && (!ixcmp(abs(n), b, s->cstdata))){
               // Yes it is!! CONFLICT!!
               printf("Conflict found after %i constant propogation passes\n", passes);
               free(unsatcts);
               return abs(n);
             }else{
+              constspropagated++;
               ixset(abs(n), 1, s->cstmask);
               ixset(abs(n), b, s->cstdata);
+              unsatcts[i] = -1;
               csts++;
             }
           }
+        }
+        if(constspropagated == 0){
+            // There were some overlapping constants this pass it seems.
+            checkpass = 1;
+            unsatcts[i] = c->clauses[i].numvars;
         }
 
       }else if(unsatcts[i] == 0){
         // CONFLICT!
         printf("Conflict found after %i constant propogation passes\n", passes);
         free(unsatcts);
-        return c->clauses[i].vars[0];
+        return abs(c->clauses[i].vars[0]);
 
       }else if(unsatcts[i] != -1){
         // Reset things.
         unsatcts[i] = c->clauses[i].numvars;
+      }else if((unsatcts[i] < -1) || (unsatcts[i] >= s->varct)){
+        printf("THERE IS A BUG IN getconstants()!! CRITICAL FAILURE!!\n");
+        exit(-1);
       }
     }
 
     passes++;
-  }while(oldcsts != csts);
+  }while(checkpass || ((unsatclauses != 0) && (oldcsts != csts)));
 
   free(unsatcts);
 
@@ -345,7 +378,7 @@ int getconstants(SOLVERSTATE* s, CNF* c, TABLE* t){
 
   printf("%i constants found!\n", csts);
 
-  return 0;
+  return unsatclauses? 0 : -1;
 }
 
 

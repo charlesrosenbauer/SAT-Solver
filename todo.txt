@@ -1,7 +1,5 @@
 TODO:
 
-* There seems to be a bug in getconstants(). tests/hard.cnf should not be creating any trivial conflicts, but for some reason it is.
-
 * approximator() seems to get stuck a lot, and never seems to go past a single pass. When I force it to, it seems to get stuck in weird loops.
 
 * It seems like the algorithm I chose for approximator() might be a bit flawed (not related to the bugs it has now). It needs to insert more random noise into the data to get out of local minima. It also seems like it might have an issue with cases where there are different groups of mostly-positive and mostly-negative constraints in a single problem.
