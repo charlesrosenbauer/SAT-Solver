@@ -101,6 +101,8 @@ int main(int argc, char** argv){
     return 1;
   }
 
+  rngseed(54137678991, 1365781653);
+
   for(int i = 1; i < argc; i++){
     int err = mainpass(argv, i);
 
